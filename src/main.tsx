@@ -4,18 +4,16 @@ import App from './App'
 import KubernetesCourse from './KubernetesCourse'
 import './index.css'
 
-function LearningGate() {
-  const [showCourse, setShowCourse] = React.useState(true)
-
-  if (showCourse) {
-    return <KubernetesCourse onComplete={() => setShowCourse(false)} onSkip={() => setShowCourse(false)} />
+function LearningPath() {
+  const [courseComplete, setCourseComplete] = React.useState(false)
+  if (!courseComplete) {
+    return <KubernetesCourse onComplete={() => setCourseComplete(true)} onSkip={() => setCourseComplete(true)} />
   }
-
   return <App />
 }
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <LearningGate />
+    <LearningPath />
   </React.StrictMode>,
 )
