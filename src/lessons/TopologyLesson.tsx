@@ -1,0 +1,11 @@
+import { useMemo, useState } from 'react'
+import { motion } from 'framer-motion'
+import { Cuboid, RotateCcw, ShieldCheck } from 'lucide-react'
+import './TopologyLesson.css'
+const zones=['eu-west-1a','eu-west-1b','eu-west-1c']
+export default function TopologyLesson({onSelect}:{onSelect:(name:string)=>void}) {
+ const [replicas,setReplicas]=useState(6);const [failed,setFailed]=useState(false);const [policy,setPolicy]=useState<'strict'|'best-effort'>('strict')
+ const placements=useMemo(()=>Array.from({length:replicas},(_,i)=>failed&&i>=4?null:i%3),[replicas,failed])
+ const counts=zones.map((_,z)=>placements.filter(v=>v===z).length)
+ return <div className="topology-scene"><div className="topology-toolbar"><label>DESIRED REPLICAS <input type="range" min="3" max="9" value={replicas} onChange={e=>setReplicas(Number(e.target.value))}/><b>{replicas}</b></label><label>whenUnsatisfiable<select value={policy} onChange={e=>setPolicy(e.target.value as 'strict'|'best-effort')}><option value="strict">DoNotSchedule</option><option value="best-effort">ScheduleAnyway</option></select></label></div><div className="zone-canvas">{zones.map((zone,z)=><section className={`topology-zone ${failed&&z===1?'zone-failed':''}`} key={zone}><header><span>ZONE {String.fromCharCode(65+z)}</span><i/>{failed&&z===1?'UNAVAILABLE':'HEALTHY'}</header><small>{zone}</small><div className="zone-replicas">{placements.map((placed,i)=>placed===z&&<motion.button layout key={i} className="topology-pod" onClick={()=>onSelect(`Replica ${i+1} in ${zone}`)}><Cuboid size={15}/> api-{String(i+1).padStart(2,'0')}</motion.button>)}</div><footer>{counts[z]} REPLICA{counts[z]===1?'':'S'}</footer></section>)}</div><div className="topology-controls"><button className={failed?'restore-zone':''} onClick={()=>setFailed(v=>!v)}>{failed?'Restore zone B':'Simulate zone B failure'}</button><button onClick={()=>{setFailed(false);setReplicas(6);setPolicy('strict')}}><RotateCcw size={13}/> Reset</button><span><ShieldCheck size={14}/> maxSkew: 1 · topologyKey: zone · {policy==='strict'?'strict':'best effort'}</span></div><p className="topology-note">{failed?'Two replicas are unavailable in the failed zone. A strict spread policy may leave replacements pending if scheduling would violate maxSkew.':'Replicas distribute across three zones. A zone-level outage does not remove every replica.'}</p></div>
+}

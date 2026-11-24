@@ -1,0 +1,12 @@
+import { useEffect, useState } from 'react'
+import { motion } from 'framer-motion'
+import { ArrowRight, Globe, Network, Server } from 'lucide-react'
+import './TrafficLesson.css'
+const hops=[{name:'Client',detail:'Resolves the host and opens an HTTPS connection.'},{name:'Load balancer',detail:'Cloud or edge infrastructure forwards external traffic to the cluster entry point.'},{name:'Ingress / Gateway',detail:'The controller applies host and path rules and selects a backend Service.'},{name:'Service',detail:'A stable virtual endpoint selects an eligible ready endpoint.'},{name:'Pod + container',detail:'The packet reaches the Pod IP and the application listens on its container port.'}]
+export default function TrafficLesson({onSelect}:{onSelect:(name:string)=>void}) {
+ const [hop,setHop]=useState(0);const [playing,setPlaying]=useState(false)
+ useEffect(()=>{if(!playing)return;const t=window.setInterval(()=>setHop(v=>{if(v>=hops.length-1){setPlaying(false);return v}return v+1}),1300);return()=>window.clearInterval(t)},[playing])
+ function play(){if(hop===hops.length-1)setHop(0);setPlaying(true)}
+ const icons=[<Globe/>,<Network/>,<ArrowRight/>,<Server/>,<Server/>]
+ return <div className="traffic-scene"><div className="traffic-labels"><span>EDGE / INGRESS</span><span>CLUSTER DATA PLANE</span></div><div className="traffic-path">{hops.map((item,i)=><div className="traffic-hop-wrap" key={item.name}><button className={`traffic-hop ${hop===i?'traffic-hop-active':''} ${i<hop?'traffic-hop-done':''}`} onClick={()=>{setHop(i);setPlaying(false);onSelect(item.name)}}><span>{icons[i]}</span><b>{item.name}</b><small>{i===2?'L7 ROUTING':i===3?'VIRTUAL IP':i===4?'POD IP:PORT':i===1?'EXTERNAL':'HTTPS'}</small></button>{i<hops.length-1&&<span className="traffic-arrow"><ArrowRight size={18}/></span>}</div>)}{playing&&<motion.i className="traffic-packet" animate={{left:`${6+hop*22}%`}} transition={{duration:.7}}/>}</div><div className="traffic-detail"><strong>HOP {String(hop+1).padStart(2,'0')} · {hops[hop].name.toUpperCase()}</strong><p>{hops[hop].detail}</p></div><div className="traffic-controls"><button onClick={play} disabled={playing}>{playing?'Following packet…':'▶ Play request journey'}</button><span>{String(hop+1).padStart(2,'0')} / {hops.length}</span></div><p className="traffic-boundary-note">Ingress/Gateway is control-plane configuration; application packets are forwarded by data-plane components—not by the API server.</p></div>
+}

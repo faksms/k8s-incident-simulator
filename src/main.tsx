@@ -6,15 +6,12 @@ import ClusterArchitecture from './ClusterArchitecture'
 import './index.css'
 
 function LearningPath() {
-  const [showArchitecture, setShowArchitecture] = React.useState(true)
-  const [courseComplete, setCourseComplete] = React.useState(false)
-  if (showArchitecture) return <ClusterArchitecture onComplete={() => setShowArchitecture(false)} />
-  if (!courseComplete) return <KubernetesCourse onComplete={() => setCourseComplete(true)} onSkip={() => setCourseComplete(true)} />
+  const [chapter, setChapter] = React.useState<'architecture' | 'course' | 'incidents'>('architecture')
+  if (chapter === 'architecture') return <ClusterArchitecture onComplete={() => setChapter('course')} />
+  if (chapter === 'course') return <KubernetesCourse onComplete={() => setChapter('incidents')} onSkip={() => setChapter('incidents')} />
   return <App />
 }
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
-    <LearningPath />
-  </React.StrictMode>,
+  <React.StrictMode><LearningPath /></React.StrictMode>,
 )
