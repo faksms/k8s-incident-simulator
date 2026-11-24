@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import type { ComponentType } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { ArrowRight, BookOpen, CheckCircle2, ChevronLeft, ChevronRight, CircleHelp, ShieldCheck, Sparkles } from 'lucide-react'
 import PodsLesson from './lessons/PodsLesson'
@@ -8,7 +9,8 @@ import TrafficLesson from './lessons/TrafficLesson'
 import TopologyLesson from './lessons/TopologyLesson'
 import './lessons/CourseShell.css'
 
-type Lesson = { id:string; title:string; subtitle:string; body:string; takeaway:string; Component:React.ComponentType }
+type LessonProps = { onSelect: (name: string) => void }
+type Lesson = { id:string; title:string; subtitle:string; body:string; takeaway:string; Component:ComponentType<LessonProps> }
 const lessons:Lesson[] = [
   {id:'pods',title:'Pods & containers',subtitle:'02 · THE POD ABSTRACTION',body:'A Pod is the smallest deployable unit. Containers in one Pod share a network identity and can share mounted volumes. Explore how the boundary shapes an application.',takeaway:'The Pod is the scheduling unit—not an individual container.',Component:PodsLesson},
   {id:'deployments',title:'Deployments & reconciliation',subtitle:'03 · DESIRED STATE',body:'A Deployment declares how many replicas should exist. Its controller continually reconciles observed state toward that target, creating replacements when Pods disappear.',takeaway:'Controllers repair drift by acting on declared intent.',Component:DeploymentLesson},
