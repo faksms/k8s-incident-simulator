@@ -8,12 +8,7 @@ function LearningGate() {
   const [showCourse, setShowCourse] = React.useState(true)
 
   if (showCourse) {
-    return (
-      <KubernetesCourse
-        onComplete={() => setShowCourse(false)}
-        onSkip={() => setShowCourse(false)}
-      />
-    )
+    return <KubernetesCourse onComplete={() => setShowCourse(false)} onSkip={() => setShowCourse(false)} />
   }
 
   return <App />
