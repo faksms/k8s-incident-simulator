@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import { Activity, ArrowDown, ArrowRight, Boxes, CheckCircle2, ChevronLeft, ChevronRight, CircleHelp, Cloud, Code2, Container, Database, Network, Pause, Play, RotateCcw, Server, ShieldCheck, Workflow } from 'lucide-react'
 import LessonCoach from './lessons/LessonCoach'
+import LearningMaterials from './LearningMaterials'
 import './ClusterArchitecture.css'
 
 const phases = [
@@ -9,7 +10,7 @@ const phases = [
   { title: 'Persist desired state', route: ['API server', 'etcd'], description: 'The API server stores the accepted object in etcd. etcd is the durable source of cluster state.' },
   { title: 'Reconcile the workload', route: ['controller manager', 'API server'], description: 'Controllers watch API objects, compare desired with observed state, then create or update workload objects.' },
   { title: 'Assign a node', route: ['scheduler', 'API server', 'kubelet'], description: 'The scheduler filters and scores eligible nodes, then records a binding through the API server.' },
-  { title: 'Start the Pod', route: ['kubelet', 'CRI runtime', 'Pod'], description: 'The node kubelet observes its assigned Pod, asks the container runtime to start it, and configures networking.' },
+  { title: 'Start the Pod', route: ['kubelet', 'CRI runtime', 'CNI networking', 'Pod'], description: 'The node kubelet observes its assigned Pod, asks the container runtime to start it, and configures networking.' },
   { title: 'Report health', route: ['kubelet', 'API server', 'controller manager'], description: 'Kubelet reports Pod status and probe results. Controllers observe the update and continue reconciling.' },
   { title: 'Route application traffic', route: ['client', 'Service dataplane', 'ready Pod'], description: 'Application packets use the Service data plane to reach a ready Pod. This is separate from control-plane reconciliation.' },
 ]
@@ -33,6 +34,7 @@ export default function ClusterArchitecture({ onComplete }: { onComplete: () => 
   const [phase, setPhase] = useState(0)
   const [playing, setPlaying] = useState(true)
   const [selected, setSelected] = useState('')
+  const [, setKnowledgePassed] = useState(false)
   const current = phases[phase]
 
   useEffect(() => {
@@ -106,7 +108,7 @@ export default function ClusterArchitecture({ onComplete }: { onComplete: () => 
                   <ComponentButton name="kubelet" icon={<Activity/>} selected={selected} active={isActive('kubelet')} onSelect={setSelected}/>
                   <ComponentButton name="kube-proxy / eBPF" icon={<Network/>} selected={selected} active={isActive('Service dataplane')} onSelect={setSelected}/>
                   <ComponentButton name="CRI runtime" icon={<Container/>} selected={selected} active={isActive('CRI runtime')} onSelect={setSelected}/>
-                  <ComponentButton name="CNI networking" icon={<Network/>} selected={selected} active={isActive('CRI runtime')} onSelect={setSelected}/>
+                  <ComponentButton name="CNI networking" icon={<Network/>} selected={selected} active={isActive('CNI networking')} onSelect={setSelected}/>
                 </div>
                 <button className={`workload-pod ${isActive('Pod') || isActive('ready Pod') ? 'component-active' : ''}`} onClick={() => setSelected('Pod')}><Boxes size={17}/><span><b>Pod · app container</b><small>Assigned workload</small></span><span className="pod-health">READY</span></button>
               </section>)}
@@ -138,7 +140,8 @@ export default function ClusterArchitecture({ onComplete }: { onComplete: () => 
         <div className="component-inspector"><CircleHelp size={17}/><span>{selected ? <><b>{selected}</b>{componentInfo[selected] ?? 'A component in the Kubernetes control and workload path.'}</> : 'Click any component in the map to inspect its role and communication boundaries.'}</span></div>
         <div className="architecture-principle"><ShieldCheck size={16}/><span><b>Important boundary</b> Control traffic goes through the API server. Service packets are data-plane traffic; they do not pass through etcd.</span></div>
       </div>
-      <footer className="architecture-footer"><span>INTERACTIVE SYSTEMS EXPLAINED · KUBERNETES ARCHITECTURE</span><button onClick={onComplete}>Continue to interactive foundations <ChevronRight size={16}/></button></footer>
+      <LearningMaterials lessonId="architecture" onPass={() => setKnowledgePassed(true)}/>
+      <footer className="architecture-footer"><span>INTERACTIVE SYSTEMS EXPLAINED · KUBERNETES ARCHITECTURE</span><button aria-label={knowledgePassed?'Continue to foundations; knowledge check passed':'Continue to interactive foundations'} onClick={onComplete}>Continue to interactive foundations <ChevronRight size={16}/></button></footer>
     </div>
   </main>
 }
