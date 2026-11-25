@@ -3,8 +3,10 @@ import type { ReactNode } from 'react'
 import { motion } from 'framer-motion'
 import { Activity, Cpu, HardDrive, RotateCcw, Server, ShieldCheck } from 'lucide-react'
 import LessonCoach from './LessonCoach'
+import SignalTrace from './SignalTrace'
 import './ResourceRequestsLesson.css'
 import './ResourceRequestsLive.css'
+import './ModuleDiagramPolish.css'
 
 type PodState = 'Pending' | 'Running' | 'Throttled' | 'OOMKilled' | 'Invalid'
 
@@ -123,6 +125,7 @@ export default function ResourceRequestsLesson({ onSelect }: { onSelect: (name: 
         <p className="live-control-note">Meters and Pod state update as you move a control.</p>
       </section>
     </div>
+    <SignalTrace title="REQUEST TO RUNTIME" steps={['Pod declares requests', 'scheduler checks node', 'container receives resources', podState === 'OOMKilled' ? 'memory OOM kill' : podState === 'Throttled' ? 'CPU throttling' : 'runtime use within limits']} onSelect={step => onSelect(step)}/>
     <div className={`resource-outcome outcome-${displayState.toLowerCase()}`} aria-live="polite"><span className="outcome-indicator"/><div><b>Pod state · {displayState}</b><p>{displayText}</p></div><small>LIVE SIMULATION</small></div>
     <p className="resource-note"><b>Scheduling:</b> the scheduler uses requests, not limits, when checking whether this Pod fits. <b>Runtime:</b> CPU can be throttled; exceeding a memory limit can cause an OOM kill. This model is simplified and does not emulate kernel or node-pressure behavior.</p>
     <LessonCoach task="Choose CPU pressure, then Memory pressure. Watch each meter cross its limit and the live Pod state change without pressing Run." hint="CPU is compressible: demand over limit causes throttling. Memory is not compressible: demand over limit can OOM-kill the container. Requests affect scheduling capacity; changing a request does not cap runtime use." complete={observedThrottle && observedOom} success="You observed live CPU throttling and a memory OOM outcome as workload demand crossed each limit."/>

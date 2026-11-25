@@ -7,8 +7,12 @@
 .course-step>span{width:26px;height:26px;font-size:11px}
 .course-step b{font-size:11px;line-height:1.35}
 .course-steps{grid-template-columns:repeat(8,minmax(0,1fr))}
-.topic-lesson-resource-quota{min-height:660px}
-.topic-lesson-resource-requests{min-height:680px}
+.topic-lesson-pods{min-height:540px}
+.topic-lesson-deployments{min-height:590px}
+.topic-lesson-services{min-height:570px}
+.topic-lesson-topology{min-height:650px}
+.topic-lesson-resource-quota{min-height:750px}
+.topic-lesson-resource-requests{min-height:820px}
 .course-kicker{font-size:11px}
 .lesson-copy h1{font-size:31px;line-height:1.2}
 .lesson-description{font-size:15px;line-height:1.7}
@@ -21,4 +25,4 @@
 .course-footer button{font-size:13px}
 .course-safety,.course-accessibility{font-size:11px;line-height:1.6}
 @media(max-width:900px){.course-steps{grid-template-columns:repeat(4,minmax(0,1fr))}.course-step b{font-size:10px}.lesson-copy h1{font-size:28px}}
-@media(max-width:600px){.course-header{min-height:64px}.course-brand small{font-size:9px}.course-progress-label{font-size:10px}.course-steps{grid-template-columns:repeat(4,minmax(0,1fr))}.course-step{min-height:42px}.course-step>span{width:23px;height:23px}.lesson-copy h1{font-size:27px}.lesson-description{font-size:14px}.learning-takeaway{font-size:13px}.lesson-instruction{font-size:12px}.course-footer{gap:7px}.course-footer button{font-size:12px}.topic-lesson-resource-quota,.topic-lesson-resource-requests{min-height:0}}
+@media(max-width:600px){.course-header{min-height:64px}.course-brand small{font-size:9px}.course-progress-label{font-size:10px}.course-steps{grid-template-columns:repeat(4,minmax(0,1fr))}.course-step{min-height:42px}.course-step>span{width:23px;height:23px}.lesson-copy h1{font-size:27px}.lesson-description{font-size:14px}.learning-takeaway{font-size:13px}.lesson-instruction{font-size:12px}.course-footer{gap:7px}.course-footer button{font-size:12px}.lesson-visual.topic-lesson-visual{height:auto;min-height:0}.topic-lesson-pods,.topic-lesson-deployments,.topic-lesson-services,.topic-lesson-topology,.topic-lesson-resource-quota,.topic-lesson-resource-requests{min-height:0}.pods-scene,.deploy-scene,.service-scene,.topology-scene,.quota-scene,.resource-lab{height:auto;min-height:0}}

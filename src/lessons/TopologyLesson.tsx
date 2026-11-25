@@ -2,8 +2,10 @@ import { useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
 import { Cuboid, RotateCcw, ShieldCheck } from 'lucide-react'
 import LessonCoach from './LessonCoach'
+import SignalTrace from './SignalTrace'
 import './TopologyLesson.css'
 import './TopologyLessonInteraction.css'
+import './ModuleDiagramPolish.css'
 
 const zones = ['eu-west-1a', 'eu-west-1b', 'eu-west-1c']
 
@@ -13,6 +15,7 @@ export default function TopologyLesson({ onSelect }: { onSelect: (name: string) 
   const [policy, setPolicy] = useState<'strict' | 'best-effort'>('strict')
   const [zonePreference, setZonePreference] = useState<'balanced' | 'zone-a'>('balanced')
   const [policyCompared, setPolicyCompared] = useState(false)
+  const [traceToken, setTraceToken] = useState(0)
 
   const placements = useMemo<Array<number | null>>(() => {
     const initial = Array.from({ length: replicas }, (_, index) => index % zones.length)
@@ -46,6 +49,7 @@ export default function TopologyLesson({ onSelect }: { onSelect: (name: string) 
   function toggleFailure() {
     setFailed(value => !value)
     setPolicyCompared(false)
+    setTraceToken(value => value + 1)
   }
 
   function reset() {
@@ -59,8 +63,8 @@ export default function TopologyLesson({ onSelect }: { onSelect: (name: string) 
   return <div className="topology-scene">
     <div className="topology-toolbar">
       <label>DESIRED REPLICAS <input aria-label="Desired replica count" type="range" min="3" max="9" value={replicas} onChange={event => setReplicas(Number(event.target.value))}/><b>{replicas}</b></label>
-      <label>whenUnsatisfiable <select aria-label="Topology spread scheduling policy" value={policy} onChange={event => { setPolicy(event.target.value as 'strict' | 'best-effort'); if (failed && zonePreference === 'zone-a') setPolicyCompared(true) }}><option value="strict">DoNotSchedule</option><option value="best-effort">ScheduleAnyway</option></select></label>
-      <label>PLACEMENT RULE <select aria-label="Additional placement rule" value={zonePreference} onChange={event => setZonePreference(event.target.value as 'balanced' | 'zone-a')}><option value="balanced">Any healthy zone</option><option value="zone-a">Zone A only</option></select></label>
+      <label>whenUnsatisfiable <select aria-label="Topology spread scheduling policy" value={policy} onChange={event => { setPolicy(event.target.value as 'strict' | 'best-effort'); if (failed && zonePreference === 'zone-a') setPolicyCompared(true); setTraceToken(value => value + 1) }}><option value="strict">DoNotSchedule</option><option value="best-effort">ScheduleAnyway</option></select></label>
+      <label>PLACEMENT RULE <select aria-label="Additional placement rule" value={zonePreference} onChange={event => { setZonePreference(event.target.value as 'balanced' | 'zone-a'); setTraceToken(value => value + 1) }}><option value="balanced">Any healthy zone</option><option value="zone-a">Zone A only</option></select></label>
     </div>
     <div className="zone-canvas">{zones.map((zone, zoneIndex) => <section className={`topology-zone ${failed && zoneIndex === 1 ? 'zone-failed' : ''}`} key={zone}>
       <header><span>ZONE {String.fromCharCode(65 + zoneIndex)}</span><i/>{failed && zoneIndex === 1 ? 'UNAVAILABLE' : 'HEALTHY'}</header>
@@ -68,6 +72,7 @@ export default function TopologyLesson({ onSelect }: { onSelect: (name: string) 
       <div className="zone-replicas">{placements.map((placed, index) => placed === zoneIndex && <motion.button layout key={index} className="topology-pod" onClick={() => onSelect(`Replica ${index + 1} in ${zone}`)}><Cuboid size={15}/> api-{String(index + 1).padStart(2, '0')}</motion.button>)}</div>
       <footer>{counts[zoneIndex]} REPLICA{counts[zoneIndex] === 1 ? '' : 'S'}</footer>
     </section>)}</div>
+    <SignalTrace title="SCHEDULER DECISION PATH" steps={['Pod is unscheduled', 'filter eligible nodes', 'evaluate spread constraint', pending ? 'replacement stays Pending' : 'bind Pod to zone']} playToken={traceToken}/>
     {pending > 0 && <div className="topology-pending" role="status"><b>{pending} replacement Pod{pending === 1 ? '' : 's'} pending</b><span>The zone-A placement rule would exceed maxSkew under DoNotSchedule.</span></div>}
     <div className="topology-controls">
       <button className={failed ? 'restore-zone' : ''} onClick={toggleFailure}>{failed ? 'Restore zone B' : 'Simulate zone B failure'}</button>

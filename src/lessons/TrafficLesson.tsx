@@ -3,6 +3,7 @@ import { motion } from 'framer-motion'
 import { ArrowRight, Globe, Network, Server } from 'lucide-react'
 import LessonCoach from './LessonCoach'
 import './TrafficLesson.css'
+import './ModuleDiagramPolish.css'
 const hops=[{name:'Client',detail:'Resolves the host and opens an HTTPS connection.'},{name:'Load balancer',detail:'Cloud or edge infrastructure forwards external traffic to the cluster entry point.'},{name:'Ingress / Gateway',detail:'The controller applies host and path rules and selects a backend Service.'},{name:'Service',detail:'A stable virtual endpoint selects an eligible ready endpoint.'},{name:'Pod + container',detail:'The packet reaches the Pod IP and the application listens on its container port.'}]
 export default function TrafficLesson({onSelect}:{onSelect:(name:string)=>void}) {
  const [hop,setHop]=useState(0);const [playing,setPlaying]=useState(false)
