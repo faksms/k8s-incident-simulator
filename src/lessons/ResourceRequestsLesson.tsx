@@ -35,7 +35,7 @@ export default function ResourceRequestsLesson({ onSelect }: { onSelect: (name: 
     Pending: 'Scheduler cannot place this Pod: its requests exceed the node’s remaining allocatable resources.',
     Running: 'The Pod fits. Runtime use is currently within the configured limits.',
     Throttled: 'CPU demand is above the CPU limit. The container stays running but receives less CPU time.',
-    OOMKilled: 'Memory use exceeded the memory limit. The container was terminated and may restart under its Pod restart policy.',
+    OOMKilled: 'In this simplified simulation, exceeding the memory limit triggers an OOM kill. Real enforcement is reactive and termination may not be immediate.',
     Invalid: 'This configuration is invalid: a resource request cannot exceed its corresponding container limit.',
   }
   const displayState = podState

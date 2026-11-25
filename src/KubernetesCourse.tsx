@@ -31,7 +31,7 @@ function describeSelection(name:string) {
   const descriptions:Record<string,string> = {
     'Application container':'Runs the main application process and typically serves traffic or performs the workload’s primary function.',
     'Init container':'Runs to completion before application containers start. Init containers run sequentially and can perform migrations or setup that must finish first.',
-    'Sidecar container':'Runs alongside the application container for the Pod lifetime. Sidecars commonly collect logs, proxy traffic, synchronize state, or add auxiliary behavior.',
+    'Sidecar container':'A helper that runs alongside the application. This example uses a regular app container; native restartable sidecars instead use initContainers with restartPolicy: Always and can start before app containers.',
     'Ambassador container':'Acts as a local proxy or gateway for the application container. The app can use localhost while the ambassador translates destinations, protocols, authentication, or routing.',
     'Startup probe':'Checks whether the application has finished initialization. While it fails, startup gates liveness and readiness checks for that container.',
     'Readiness probe':'Determines whether the container is ready to receive traffic. Failure marks the Pod NotReady and removes it from normal Service endpoints without necessarily restarting it.',

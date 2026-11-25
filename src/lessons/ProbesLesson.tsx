@@ -37,22 +37,20 @@ export default function ProbesLesson({ onSelect }: { onSelect: (name: string) =>
     setCountdown(100)
     const interval = window.setInterval(() => {
       setCountdown(value => Math.max(0, value - 4))
-    }, 120)
+    }, 112)
     const timer = window.setTimeout(() => {
+      if (stage === 9) setRestartCount(value => value + 1)
       setStage(current => {
         if (current === 1 && startupFailure) return 1
-        if (current === 3 && readinessFailure) return 3
+        if (current === 3 && readinessFailure) return 4
         if (current === 7 && livenessFailure) return 8
-        if (current === 7) return 10
-        if (current === 9) {
-          setRestartCount(value => value + 1)
-          return 10
-        }
+        if (current === 7) return 6
+        if (current === 9) return 10
         if (current === 10) return 0
         return current + 1
       })
       setCountdown(100)
-    }, 3000)
+    }, 2800)
     return () => {
       window.clearInterval(interval)
       window.clearTimeout(timer)
@@ -86,15 +84,13 @@ export default function ProbesLesson({ onSelect }: { onSelect: (name: string) =>
   function nextStep() {
     setPlaying(false)
     setCountdown(100)
-    setStage(value => {
-      if (value === 9) setRestartCount(current => current + 1)
-      return value >= stages.length - 1 ? 0 : value + 1
-    })
+    if (stage === 9) setRestartCount(current => current + 1)
+    setStage(value => value >= stages.length - 1 ? 0 : value + 1)
   }
 
   const startupBlocked = stage === 1 && startupFailure
-  const startupPassed = stage >= 2 && !startupFailure
-  const readinessBlocked = readinessFailure && stage >= 3 && stage <= 6
+  const startupPassed = stage >= 2 && stage <= 7 && !startupFailure
+  const readinessBlocked = readinessFailure && stage >= 3 && stage <= 7
   const readinessPassed = stage >= 4 && stage <= 7 && !readinessFailure && startupPassed
   const killed = stage === 8
   const restarting = stage === 9
@@ -107,7 +103,7 @@ export default function ProbesLesson({ onSelect }: { onSelect: (name: string) =>
       <StepSequenceControls active={stage} total={stages.length} playing={playing} intervalMs={2800} onPrevious={previousStep} onNext={nextStep} onToggle={() => setPlaying(value => !value)} onReset={reset} compact />
     </div>
 
-    <motion.section key={stage} className={`probe-lifecycle-workbench ${startupBlocked || readinessBlocked || killed ? 'probe-lifecycle-failure' : ''}`} initial={{ opacity: .7, y: 5 }} animate={{ opacity: 1, y: 0 }}>
+    <motion.section className={`probe-lifecycle-workbench ${startupBlocked || readinessBlocked || killed ? 'probe-lifecycle-failure' : ''}`} initial={{ opacity: .7, y: 5 }} animate={{ opacity: 1, y: 0 }}>
       <header>
         <div><small>LIVE SEQUENCE · {String(stage + 1).padStart(2, '0')} / {String(stages.length).padStart(2, '0')}</small><b>{current.title}</b></div>
         <span className="probe-phase-status" style={{ '--step-progress': `${countdown}%` } as CSSProperties}> 
@@ -156,14 +152,14 @@ export default function ProbesLesson({ onSelect }: { onSelect: (name: string) =>
 
           <div className="pod-endpoints">
             <span>ENDPOINTSLICE</span>
-            <b className={endpointEligible ? 'endpoint-live' : 'endpoint-empty'}>{endpointEligible ? '10.244.1.8:8080' : 'NO ENDPOINT'}</b>
-            <small>{endpointEligible ? 'Ready · receives traffic' : 'Removed · traffic blocked'}</small>
+            <b className={endpointEligible ? 'endpoint-live' : 'endpoint-empty'}>10.244.1.8:8080</b>
+            <small>{endpointEligible ? 'ready=true · eligible' : 'ready=false · not eligible'}</small>
           </div>
         </div>
       </div>
 
       <motion.div key={current.title} className={`probe-explanation ${startupBlocked || readinessBlocked || killed ? 'probe-explanation-fail' : ''}`} initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} aria-live="polite">
-        <i/><div><b>{current.title}</b><p>{startupBlocked ? 'Startup has not passed. Readiness and liveness remain gated, so no endpoint is published.' : readinessBlocked ? 'Readiness failed. The container remains running, but the EndpointSlice removes it and the ClusterIP has no usable backend.' : killed ? 'Liveness failed. The container is killed and restarted in the same Pod sandbox; the Pod IP remains 10.244.1.8.' : current.detail}</p></div>
+        <i/><div><b>{current.title}</b><p>{startupBlocked ? 'Startup has not passed. Readiness and liveness remain gated; this Pod is not eligible for normal Service traffic.' : readinessBlocked ? 'Readiness failed. The container remains running; its EndpointSlice entry can remain with ready=false, so normal Service traffic does not use it.' : killed ? 'Liveness failed. The container is killed and restarted in the same Pod sandbox; the Pod IP remains 10.244.1.8.' : current.detail}</p></div>
         <span>{restartCount ? `RESTART #${restartCount}` : 'RESTART #0'}</span>
       </motion.div>
     </motion.section>
@@ -174,6 +170,6 @@ export default function ProbesLesson({ onSelect }: { onSelect: (name: string) =>
       <button className={livenessFailure ? 'failure-active' : ''} onClick={() => toggleFailure('liveness')}><RefreshCw size={14}/> Liveness / kill</button>
     </div>
 
-    <LessonCoach task="Watch the boot lifecycle, then trigger startup, readiness, or liveness failures and see which traffic branch changes." hint="Startup gates the other probes. Readiness removes the endpoint. Liveness kills and restarts the container while preserving the Pod IP." complete={tested.size === 3} success="You compared startup gating, traffic readiness, and container recovery."/>
+    <LessonCoach task="Watch the boot lifecycle, then trigger startup, readiness, or liveness failures and see which traffic branch changes." hint="Startup gates the other probes. Readiness affects endpoint eligibility. Liveness kills and restarts the container while preserving the Pod IP." complete={tested.size === 3} success="You compared startup gating, traffic readiness, and container recovery."/>
   </div>
 }

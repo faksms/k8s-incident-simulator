@@ -7,7 +7,7 @@ import './DeploymentLesson.css'
 import './DeploymentLessonInteraction.css'
 import './ModuleDiagramPolish.css'
 
-const reconcilePhases=[{name:'OBSERVE',detail:'The ReplicaSet observes fewer Ready replicas than requested.'},{name:'COMPARE',detail:'Observed count is compared with spec.replicas.'},{name:'ACT',detail:'The ReplicaSet creates or removes Pods to match the target.'},{name:'REPEAT',detail:'The controller watches again until observed state converges.'}]
+const reconcilePhases=[{name:'OBSERVE',detail:'The ReplicaSet observes the number of matching Pods, regardless of readiness.'},{name:'COMPARE',detail:'The number of matching Pods is compared with spec.replicas.'},{name:'ACT',detail:'The ReplicaSet creates or removes Pods to match the target.'},{name:'REPEAT',detail:'The controller watches again until observed state converges.'}]
 
 export default function DeploymentLesson({onSelect}:{onSelect:(name:string)=>void}) {
   const [desired,setDesired]=useState(3)

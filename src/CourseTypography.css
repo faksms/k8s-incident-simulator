@@ -24,5 +24,38 @@
 .course-footer{font-size:11px}
 .course-footer button{font-size:13px}
 .course-safety,.course-accessibility{font-size:11px;line-height:1.6}
+.pod-init-sequence{margin-top:12px;padding-top:10px;border-top:1px solid #35584c}
+.pod-init-sequence p{margin:0;color:#c5d9d4;font-size:12px;line-height:1.5}
+.pod-init-sequence p b{margin-right:8px;color:#90e0bf;font-family:'IBM Plex Mono',monospace}
+.pods-scene .pod-waiting{opacity:.7}
+.pods-scene .pod-waiting i{color:#efc97c}
+.pods-scene .pod-init-active{box-shadow:0 0 16px #e7cd7866}
+.pods-scene .pod-container{transition:opacity .45s,border-color .45s,box-shadow .45s}
+.service-endpoint-note{margin:8px 0;color:#afc2d0;font-size:12px;line-height:1.5}
+.service-scene .service-target{border-color:#6ae1c2;box-shadow:0 0 16px #58d5b855}
+.service-scene .endpoint-pod{transition:border-color .45s,background-color .45s,box-shadow .45s}
+.service-scene .service-line{position:relative}
+.service-scene .service-line i{position:absolute;left:0;top:0;margin:-3px 0 0;animation:service-request-packet 1s ease-in-out both}
+@keyframes service-request-packet{from{left:0;opacity:1}to{left:100%;opacity:0}}
+@media(prefers-reduced-motion:reduce){.service-scene .service-line i{animation:none}}
+.pods-scene button:focus-visible,.service-scene button:focus-visible,.probes-scene button:focus-visible{outline:2px solid #65d8e6;outline-offset:3px}
+@media(max-width:600px){
+	.course-page .course-steps{grid-template-columns:repeat(2,minmax(0,1fr))}
+	.course-step{justify-content:flex-start;min-width:0}
+	.course-page .course-step b{display:block;font-size:11px;overflow-wrap:anywhere}
+	.pods-scene .pod-container-row,.pods-scene .pod-shared-row{flex-direction:column}
+	.pods-scene .pod-container{width:100%;min-width:0}
+	.pods-scene .pod-node-title span{display:none}
+	.pods-scene .pod-node-boundary{margin-left:4px;margin-right:4px}
+	.service-scene .service-flow-row{grid-template-columns:minmax(0,1fr);gap:8px}
+	.service-scene .service-line{width:1px;height:20px;justify-self:center}
+	.service-scene .service-line i{top:0;left:-3px;animation:none}
+	.probes-scene .parallel-probe-map{grid-template-columns:minmax(0,1fr);overflow:visible}
+	.probes-scene .traffic-route{height:28px;transform:rotate(90deg);width:28px;justify-self:center}
+	.probes-scene .probe-pod-content{grid-template-columns:minmax(0,1fr)}
+	.probes-scene .pod-endpoints{grid-template-columns:minmax(0,1fr);gap:4px}
+	.probes-scene .pod-endpoints small{display:block}
+	.probes-scene .probe-sim-toolbar{flex-wrap:wrap}
+}
 @media(max-width:900px){.course-steps{grid-template-columns:repeat(4,minmax(0,1fr))}.course-step b{font-size:10px}.lesson-copy h1{font-size:28px}}
 @media(max-width:600px){.course-header{min-height:64px}.course-brand small{font-size:9px}.course-progress-label{font-size:10px}.course-steps{grid-template-columns:repeat(4,minmax(0,1fr))}.course-step{min-height:42px}.course-step>span{width:23px;height:23px}.lesson-copy h1{font-size:27px}.lesson-description{font-size:14px}.learning-takeaway{font-size:13px}.lesson-instruction{font-size:12px}.course-footer{gap:7px}.course-footer button{font-size:12px}.lesson-visual.topic-lesson-visual{height:auto;min-height:0}.topic-lesson-pods,.topic-lesson-deployments,.topic-lesson-services,.topic-lesson-topology,.topic-lesson-resource-quota,.topic-lesson-resource-requests{min-height:0}.pods-scene,.deploy-scene,.service-scene,.topology-scene,.quota-scene,.resource-lab{height:auto;min-height:0}}
