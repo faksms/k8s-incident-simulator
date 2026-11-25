@@ -6,80 +6,142 @@ import SignalTrace from './SignalTrace'
 import './TopologyLesson.css'
 import './TopologyLessonInteraction.css'
 import './ModuleDiagramPolish.css'
+import './TopologyNeon.css'
 
-const zones = ['eu-west-1a', 'eu-west-1b', 'eu-west-1c']
+type SpreadKey = 'zone' | 'node'
+type FailureScope = 'node' | 'zone'
+type PlacementPolicy = 'strict' | 'best-effort'
+type Placement = { id: number; node: number } | { id: number; node: null }
+
+type WorkerNode = { name: string; zone: string }
+const nodes: WorkerNode[] = [
+  { name: 'node-01', zone: 'zone-a' },
+  { name: 'node-02', zone: 'zone-a' },
+  { name: 'node-03', zone: 'zone-b' },
+  { name: 'node-04', zone: 'zone-c' },
+]
+const zones = [...new Set(nodes.map(node => node.zone))]
 
 export default function TopologyLesson({ onSelect }: { onSelect: (name: string) => void }) {
-  const [replicas, setReplicas] = useState(6)
-  const [failed, setFailed] = useState(false)
-  const [policy, setPolicy] = useState<'strict' | 'best-effort'>('strict')
-  const [zonePreference, setZonePreference] = useState<'balanced' | 'zone-a'>('balanced')
-  const [policyCompared, setPolicyCompared] = useState(false)
+  const [replicas, setReplicas] = useState(8)
+  const [spreadKey, setSpreadKey] = useState<SpreadKey>('node')
+  const [policy, setPolicy] = useState<PlacementPolicy>('strict')
+  const [failureScope, setFailureScope] = useState<FailureScope>('node')
+  const [failedTarget, setFailedTarget] = useState('node-02')
+  const [failureActive, setFailureActive] = useState(false)
+  const [preferredNode, setPreferredNode] = useState('any')
   const [traceToken, setTraceToken] = useState(0)
 
-  const placements = useMemo<Array<number | null>>(() => {
-    const initial = Array.from({ length: replicas }, (_, index) => index % zones.length)
-    if (!failed) return initial
+  const placements = useMemo<Placement[]>(() => {
+    const eligible = nodes.map((_, index) => index).filter(index => {
+      if (!failureActive) return true
+      return failureScope === 'node' ? nodes[index].name !== failedTarget : nodes[index].zone !== failedTarget
+    })
+    const failedNodes = nodes.map((_, index) => index).filter(index => !eligible.includes(index))
+    const domains = spreadKey === 'node' ? nodes.map(node => node.name) : zones
+    const domainForNode = (nodeIndex: number) => spreadKey === 'node' ? nodes[nodeIndex].name : nodes[nodeIndex].zone
+    const initial: Placement[] = []
 
-    const survivors = initial.filter(zone => zone !== 1)
-    const replacements = replicas - survivors.length
-    const counts = zones.map((_, zone) => survivors.filter(placement => placement === zone).length)
-    const scheduled: Array<number | null> = []
-
-    for (let index = 0; index < replacements; index++) {
-      const target = zonePreference === 'zone-a' ? 0 : counts[0] <= counts[2] ? 0 : 2
-      const nextCounts = [counts[0] + (target === 0 ? 1 : 0), counts[2] + (target === 2 ? 1 : 0)]
-      const violatesSpread = Math.max(...nextCounts) - Math.min(...nextCounts) > 1
-
-      if (policy === 'strict' && violatesSpread) {
-        scheduled.push(null)
-        continue
-      }
-
-      scheduled.push(target)
-      counts[target]++
+    for (let id = 1; id <= replicas; id++) {
+      const targetDomain = domains[(id - 1) % domains.length]
+      const candidates = eligible.filter(index => domainForNode(index) === targetDomain)
+      const targetNode = candidates.length ? candidates[(id - 1) % candidates.length] : null
+      initial.push({ id, node: targetNode })
     }
 
-    return [...survivors, ...scheduled]
-  }, [replicas, failed, policy, zonePreference])
+    if (!failureActive) return initial
 
-  const counts = zones.map((_, zone) => placements.filter(placement => placement === zone).length)
-  const pending = placements.filter(placement => placement === null).length
+    const lost = initial.filter(placement => placement.node !== null && failedNodes.includes(placement.node))
+    const survivors = initial.filter(placement => placement.node === null || !failedNodes.includes(placement.node))
+    const pendingIds = initial.filter(placement => placement.node === null).map(placement => placement.id)
+    const counts = domains.map(domain => survivors.filter(placement => placement.node !== null && domainForNode(placement.node) === domain).length)
+    const replacementCount = lost.length + pendingIds.length
+    let nextId = replicas
+    const replacements: Placement[] = []
 
-  function toggleFailure() {
-    setFailed(value => !value)
-    setPolicyCompared(false)
+    for (let index = 0; index < replacementCount; index++) {
+      const allowed = eligible.filter(nodeIndex => preferredNode === 'any' || nodes[nodeIndex].name === preferredNode)
+      if (!allowed.length) {
+        replacements.push({ id: ++nextId, node: null })
+        continue
+      }
+      const candidateDomains = [...new Set(allowed.map(domainForNode))]
+      const sortedDomains = candidateDomains.sort((a, b) => counts[domains.indexOf(a)] - counts[domains.indexOf(b)])
+      const targetDomain = sortedDomains[0]
+      const domainIndex = domains.indexOf(targetDomain)
+      const nextCounts = counts.map((count, countIndex) => count + (countIndex === domainIndex ? 1 : 0))
+      const violatesSpread = Math.max(...nextCounts) - Math.min(...nextCounts) > 1
+      if (policy === 'strict' && violatesSpread) {
+        replacements.push({ id: ++nextId, node: null })
+        continue
+      }
+      const targetNode = allowed.filter(nodeIndex => domainForNode(nodeIndex) === targetDomain).sort((a, b) => survivors.filter(item => item.node === a).length - survivors.filter(item => item.node === b).length)[0]
+      counts[domainIndex]++
+      replacements.push({ id: ++nextId, node: targetNode })
+    }
+
+    return [...survivors, ...replacements]
+  }, [replicas, spreadKey, policy, failureScope, failedTarget, failureActive, preferredNode])
+
+  const countsByNode = nodes.map((_, nodeIndex) => placements.filter(placement => placement.node === nodeIndex).length)
+  const countsByZone = zones.map(zone => placements.filter(placement => placement.node !== null && nodes[placement.node].zone === zone).length)
+  const pending = placements.filter(placement => placement.node === null).length
+  const activeNodes = nodes.filter((_, index) => !(failureActive && (failureScope === 'node' ? nodes[index].name === failedTarget : nodes[index].zone === failedTarget))).length
+  const domainCounts = spreadKey === 'node' ? countsByNode : countsByZone
+  const skew = domainCounts.length ? Math.max(...domainCounts) - Math.min(...domainCounts) : 0
+
+  function triggerFailure() {
+    setFailureActive(value => !value)
     setTraceToken(value => value + 1)
   }
 
   function reset() {
-    setFailed(false)
-    setReplicas(6)
+    setReplicas(8)
+    setSpreadKey('node')
     setPolicy('strict')
-    setZonePreference('balanced')
-    setPolicyCompared(false)
+    setFailureScope('node')
+    setFailedTarget('node-02')
+    setFailureActive(false)
+    setPreferredNode('any')
+    setTraceToken(value => value + 1)
   }
+
+  const targetOptions = failureScope === 'node' ? nodes.map(node => node.name) : zones
+  const failedName = failureActive ? failedTarget : 'no domain failed'
+  const learnerCompared = failureActive && spreadKey === 'node' && (policy === 'best-effort' || preferredNode !== 'any')
 
   return <div className="topology-scene">
     <div className="topology-toolbar">
-      <label>DESIRED REPLICAS <input aria-label="Desired replica count" type="range" min="3" max="9" value={replicas} onChange={event => setReplicas(Number(event.target.value))}/><b>{replicas}</b></label>
-      <label>whenUnsatisfiable <select aria-label="Topology spread scheduling policy" value={policy} onChange={event => { setPolicy(event.target.value as 'strict' | 'best-effort'); if (failed && zonePreference === 'zone-a') setPolicyCompared(true); setTraceToken(value => value + 1) }}><option value="strict">DoNotSchedule</option><option value="best-effort">ScheduleAnyway</option></select></label>
-      <label>PLACEMENT RULE <select aria-label="Additional placement rule" value={zonePreference} onChange={event => { setZonePreference(event.target.value as 'balanced' | 'zone-a'); setTraceToken(value => value + 1) }}><option value="balanced">Any healthy zone</option><option value="zone-a">Zone A only</option></select></label>
+      <label>DESIRED PODS <input aria-label="Desired Pod replica count" type="range" min="4" max="12" value={replicas} onChange={event => { setReplicas(Number(event.target.value)); setTraceToken(value => value + 1) }}/><b>{replicas}</b></label>
+      <label>SPREAD BY <select aria-label="Topology spread topology key" value={spreadKey} onChange={event => { setSpreadKey(event.target.value as SpreadKey); setTraceToken(value => value + 1) }}><option value="node">Node · kubernetes.io/hostname</option><option value="zone">Zone · topology.kubernetes.io/zone</option></select></label>
+      <label>WHEN UNSATISFIABLE <select aria-label="Topology spread scheduling policy" value={policy} onChange={event => { setPolicy(event.target.value as PlacementPolicy); setTraceToken(value => value + 1) }}><option value="strict">DoNotSchedule</option><option value="best-effort">ScheduleAnyway</option></select></label>
     </div>
-    <div className="zone-canvas">{zones.map((zone, zoneIndex) => <section className={`topology-zone ${failed && zoneIndex === 1 ? 'zone-failed' : ''}`} key={zone}>
-      <header><span>ZONE {String.fromCharCode(65 + zoneIndex)}</span><i/>{failed && zoneIndex === 1 ? 'UNAVAILABLE' : 'HEALTHY'}</header>
-      <small>{zone}</small>
-      <div className="zone-replicas">{placements.map((placed, index) => placed === zoneIndex && <motion.button layout key={index} className="topology-pod" onClick={() => onSelect(`Replica ${index + 1} in ${zone}`)}><Cuboid size={15}/> api-{String(index + 1).padStart(2, '0')}</motion.button>)}</div>
-      <footer>{counts[zoneIndex]} REPLICA{counts[zoneIndex] === 1 ? '' : 'S'}</footer>
-    </section>)}</div>
-    <SignalTrace title="SCHEDULER DECISION PATH" steps={['Pod is unscheduled', 'filter eligible nodes', 'evaluate spread constraint', pending ? 'replacement stays Pending' : 'bind Pod to zone']} playToken={traceToken}/>
-    {pending > 0 && <div className="topology-pending" role="status"><b>{pending} replacement Pod{pending === 1 ? '' : 's'} pending</b><span>The zone-A placement rule would exceed maxSkew under DoNotSchedule.</span></div>}
-    <div className="topology-controls">
-      <button className={failed ? 'restore-zone' : ''} onClick={toggleFailure}>{failed ? 'Restore zone B' : 'Simulate zone B failure'}</button>
-      <button onClick={reset}><RotateCcw size={13}/> Reset</button>
-      <span><ShieldCheck size={14}/> maxSkew: 1 · topologyKey: zone · {policy === 'strict' ? 'strict' : 'best effort'}</span>
+    <div className="topology-secondary-controls">
+      <label>FAILURE SCOPE <select aria-label="Failure scope" value={failureScope} onChange={event => { const scope = event.target.value as FailureScope; setFailureScope(scope); setFailedTarget(scope === 'node' ? 'node-02' : 'zone-a'); setFailureActive(false); setTraceToken(value => value + 1) }}><option value="node">One node</option><option value="zone">Entire zone</option></select></label>
+      <label>FAIL <select aria-label="Node or zone to fail" value={failedTarget} onChange={event => { setFailedTarget(event.target.value); setTraceToken(value => value + 1) }}>{targetOptions.map(target => <option key={target} value={target}>{target}</option>)}</select></label>
+      <label>PLACEMENT PREFERENCE <select aria-label="Pod placement preference" value={preferredNode} onChange={event => { setPreferredNode(event.target.value); setTraceToken(value => value + 1) }}><option value="any">Any eligible node</option>{nodes.filter(node => !(failureActive && (failureScope === 'node' ? node.name === failedTarget : node.zone === failedTarget))).map(node => <option key={node.name} value={node.name}>{node.name} only</option>)}</select></label>
+      <button className={`topology-failure-button ${failureActive ? 'failure-active' : ''}`} onClick={triggerFailure}>{failureActive ? 'Restore domain' : 'Simulate failure'}</button>
+      <button className="topology-reset-button" onClick={reset}><RotateCcw size={14}/> Reset</button>
     </div>
-    <p className="topology-note">{!failed ? 'Replicas are spread across three zones. A zone outage removes its Pods; healthy zones may host replacements.' : zonePreference === 'balanced' ? 'With healthy capacity in zones A and C, replacements can rebalance across the surviving domains.' : policy === 'strict' ? `${pending} replacement Pod${pending === 1 ? '' : 's'} stay pending when the zone-A placement rule conflicts with maxSkew.` : 'ScheduleAnyway treats spread as a preference; the additional zone-A placement rule can produce an uneven distribution.'}</p>
-    <LessonCoach task="Fail zone B, set the placement rule to Zone A only, then compare DoNotSchedule with ScheduleAnyway." hint="The simulation adds a competing placement rule that allows replacements only in zone A. DoNotSchedule enforces maxSkew and can leave one replica pending; ScheduleAnyway makes spread a preference and tolerates the imbalance. With no competing rule, replacements can rebalance across healthy zones." complete={failed && zonePreference === 'zone-a' && policyCompared} success="You compared a hard spread constraint with a soft preference under a competing placement rule. Constraints shape placement, but neither spread nor replicas create capacity."/>
+
+    <div className="topology-readout"><span>TOPOLOGY KEY <b>{spreadKey === 'node' ? 'kubernetes.io/hostname' : 'topology.kubernetes.io/zone'}</b></span><span>MAX SKEW <b>{skew} POD{skew === 1 ? '' : 'S'}</b></span><span>ACTIVE NODES <b>{activeNodes} / {nodes.length}</b></span><span>FAILED DOMAIN <b>{failedName}</b></span></div>
+
+    <div className="topology-node-grid">{nodes.map((node, nodeIndex) => {
+      const isFailed = failureActive && (failureScope === 'node' ? node.name === failedTarget : node.zone === failedTarget)
+      const nodePods = placements.filter(placement => placement.node === nodeIndex)
+      return <motion.section layout key={node.name} className={`topology-node-card ${isFailed ? 'node-failed' : ''} ${spreadKey === 'node' ? 'node-key-active' : ''}`} aria-label={`${node.name}, ${node.zone}, ${countsByNode[nodeIndex]} Pods${isFailed ? ', failed' : ''}`}>
+        <header><span><i className={`node-status-dot ${isFailed ? 'status-failed' : ''}`}/><b>{node.name}</b></span><small>{node.zone}</small></header>
+        <div className="node-capacity-slots">{Array.from({ length: 3 }, (_, slot) => {
+          const placement = nodePods[slot]
+          return placement ? <motion.button layout key={placement.id} className={`topology-pod-card ${placement.id > replicas ? 'pod-replacement' : ''}`} onClick={() => onSelect(`Pod ${placement.id} on ${node.name} in ${node.zone}`)} initial={{ opacity: 0, scale: .8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: .75 }}><Cuboid size={15}/><b>api-{String(placement.id).padStart(2, '0')}</b><small>{placement.id > replicas ? 'REPLACEMENT' : 'READY'}</small></motion.button> : <span className="empty-node-slot" key={`empty-${slot}`}>SCHEDULABLE</span>
+        })}</div>
+        <footer>{countsByNode[nodeIndex]} / 3 PODS</footer>
+      </motion.section>
+    })}{pending > 0 && <motion.section className="pending-node-card" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}><span className="pending-pulse"/><b>{pending} PENDING</b><small>{policy === 'strict' ? 'maxSkew blocks placement' : 'no eligible capacity'}</small></motion.section>}</div>
+
+    <div className="topology-zone-summary" aria-label="Pod counts per zone">{zones.map((zone, index) => <div key={zone}><span>{zone}</span><b>{countsByZone[index]} Pods</b></div>)}</div>
+    <SignalTrace title={`SCHEDULER · SPREAD BY ${spreadKey.toUpperCase()}`} steps={['Pod is unscheduled', 'filter active nodes', `compare ${spreadKey} skew`, pending ? 'Pod remains Pending' : 'bind Pod to node']} playToken={traceToken}/>
+    <p className="topology-note">{!failureActive ? spreadKey === 'node' ? 'Node-level spreading distributes replicas across hostnames. Nodes 01 and 02 share zone A, so balanced node placement does not guarantee balanced zone placement.' : 'Zone-level spreading balances replicas across failure domains, while multiple nodes within a zone provide additional local capacity.' : pending > 0 ? `${pending} Pod${pending === 1 ? '' : 's'} cannot be placed after ${failedTarget} failed${policy === 'strict' ? ' because DoNotSchedule enforces maxSkew' : ' because no eligible node satisfies the placement preference'}.` : `The scheduler placed replacement Pods after ${failedTarget} failed. Compare node counts above with zone totals to see the selected topology key’s effect.`}</p>
+    <LessonCoach task="Compare node and zone spread, then fail node-02 and inspect how replicas move. Try failing zone-a next." hint="topologyKey selects the domain counted by maxSkew. kubernetes.io/hostname counts each node separately; topology.kubernetes.io/zone counts all nodes in the same zone as one domain. A failure only removes capacity in its scope. DoNotSchedule may leave Pods pending when hard spread cannot be met; ScheduleAnyway treats spread as a preference." complete={learnerCompared} success="You compared host-level and zone-level spread and observed how failures affect their domains. Node spread alone does not ensure zone resilience."/>
   </div>
 }
