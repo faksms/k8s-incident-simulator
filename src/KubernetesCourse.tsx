@@ -8,6 +8,7 @@ import ServiceLesson from './lessons/ServiceLesson'
 import TrafficLesson from './lessons/TrafficLesson'
 import TopologyLesson from './lessons/TopologyLesson'
 import ResourceQuotaLesson from './lessons/ResourceQuotaLesson'
+import ResourceRequestsLesson from './lessons/ResourceRequestsLesson'
 import LearningMaterials from './LearningMaterials'
 import './lessons/CourseShell.css'
 import './CourseTypography.css'
@@ -20,7 +21,8 @@ const lessons:Lesson[] = [
   {id:'services',title:'Services & ready endpoints',subtitle:'04 · DISCOVERY AND ROUTING',body:'A Service provides a stable virtual address. Selectors identify matching Pods, and readiness determines which matching Pods are published as usable endpoints.',takeaway:'Matching labels are not enough: only Ready endpoints should receive traffic.',Component:ServiceLesson},
   {id:'traffic',title:'Ingress to application traffic',subtitle:'05 · REQUEST JOURNEY',body:'External HTTP traffic travels through infrastructure and Kubernetes resources before reaching a container. Watch each hop and distinguish the edge, routing, and workload responsibilities.',takeaway:'Ingress/Gateway routes to a Service; the Service data plane selects a ready Pod.',Component:TrafficLesson},
   {id:'topology',title:'Resilience across failure domains',subtitle:'06 · SCHEDULING AND AVAILABILITY',body:'Topology spread constraints influence placement across zones or nodes. Simulate an outage and see how policy and remaining capacity affect replacement scheduling.',takeaway:'Spread reduces correlated failure risk; it does not create capacity.',Component:TopologyLesson},
-  {id:'resource-quota',title:'Namespace resource quotas',subtitle:'07 · RESOURCE GOVERNANCE',body:'ResourceQuota places hard aggregate limits on namespaced resources. See how the API admission check compares a new workload with the namespace budget before creating Pods.',takeaway:'A workload request is admitted only when all applicable hard quotas have room.',Component:ResourceQuotaLesson},
+  {id:'resource-requests',title:'Pod resource requests & limits',subtitle:'07 · SCHEDULING AND RUNTIME',body:'Tune a Pod’s CPU and memory requests and limits. Watch requests determine placement while runtime usage can trigger CPU throttling or a memory OOM kill.',takeaway:'Requests shape scheduling; limits constrain runtime consumption.',Component:ResourceRequestsLesson},
+  {id:'resource-quota',title:'Namespace resource quotas',subtitle:'08 · RESOURCE GOVERNANCE',body:'ResourceQuota places hard aggregate limits on namespaced resources. See how the API admission check compares a new workload with the namespace budget before creating Pods.',takeaway:'A workload request is admitted only when all applicable hard quotas have room.',Component:ResourceQuotaLesson},
 ]
 
 function describeSelection(name:string) {
@@ -36,6 +38,7 @@ function describeSelection(name:string) {
     'Pod + container':'The final hop reaches a Pod IP and the port on which the application is listening.',
     'cpu requests quota':'The namespace sums CPU requests across applicable Pods and checks the total against requests.cpu.',
     'memory requests quota':'The namespace sums memory requests and checks the total against requests.memory.',
+    'Application Pod':'This Pod’s requests are considered by the scheduler before placement. Once running, its container limits constrain CPU and memory consumption.',
     'Reconcile loop: observe':'The controller reads current workload state from the API and observes how many matching Pods exist.',
     'Reconcile loop: compare':'The controller compares observed replicas with the desired spec.replicas value.',
     'Reconcile loop: act':'The ReplicaSet creates or removes Pods to reduce the difference between observed and desired state.',
@@ -66,7 +69,7 @@ export default function KubernetesCourse({onComplete,onSkip}:{onComplete:()=>voi
         <div className="visual-card topic-visual"><div className="visual-top"><span><Sparkles size={15}/> SYSTEMS / EXPLAINED</span><span className="demo-badge">K8S · {String(index+2).padStart(2,'0')}</span></div><AnimatePresence mode="wait"><motion.div key={lesson.id} className={`lesson-visual topic-lesson-visual topic-lesson-${lesson.id}`} initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} exit={{opacity:0,y:-8}} transition={{duration:.2}}><Scene onSelect={setSelected}/></motion.div></AnimatePresence><div className="visual-footer"><span><span className="legend-dot"/> SIMULATED CLUSTER</span><span>NO REAL INFRASTRUCTURE</span></div></div>
       </section>
       <LearningMaterials key={lesson.id} lessonId={lesson.id} onPass={markPassed}/>
-      <footer className="course-footer"><button className="course-back" onClick={()=>move(index-1)}><ChevronLeft size={17}/> Previous topic</button><span>TOPIC {String(index+2).padStart(2,'0')} / 07</span><button className="course-next" onClick={()=>move(index+1)}>{index===lessons.length-1?'Start incident exercises':'Next topic'} <ChevronRight size={17}/></button></footer>
+      <footer className="course-footer"><button className="course-back" onClick={()=>move(index-1)}><ChevronLeft size={17}/> Previous topic</button><span>TOPIC {String(index+2).padStart(2,'0')} / 08</span><button className="course-next" onClick={()=>move(index+1)}>{index===lessons.length-1?'Start incident exercises':'Next topic'} <ChevronRight size={17}/></button></footer>
       <p className="course-safety"><ShieldCheck size={14}/> Interactive training simulation · no connection to a real cluster.</p>
       <p className="course-accessibility"><CircleHelp size={13}/> Each topic is an independent module; use the topic navigation to revisit concepts.</p>
     </div>

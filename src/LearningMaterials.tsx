@@ -128,6 +128,22 @@ const materials: Record<string, Material> = {
     answer: 1,
     explanation: 'Quota is checked for each Pod admission. Two Pods consume 1500m of the 2000m remaining; the third would bring the total to 2250m, so that Pod is rejected while the Deployment remains below its desired replicas.',
   },
+  'resource-requests': {
+    title: 'Pod requests, limits, and runtime behavior',
+    objective: 'Choose resource values that allow placement and understand what happens when runtime demand exceeds a limit.',
+    concepts: [
+      { term: 'Requests guide scheduling', detail: 'The scheduler evaluates a Pod’s resource requests against node allocatable capacity. Requests are reservations for placement decisions, not a prediction of exact usage.' },
+      { term: 'CPU limits throttle', detail: 'CPU is compressible. When a container tries to exceed its CPU limit, it is throttled and receives less CPU time; it is not normally killed for CPU use alone.' },
+      { term: 'Memory limits can OOM-kill', detail: 'Memory is not compressible. A container that exceeds its memory limit may be terminated by the kernel with an OOM kill and restarted according to its restart policy.' },
+      { term: 'QoS and sizing', detail: 'Requests and limits also affect scheduling and QoS classification. Set them from observed workload behavior, leave headroom, and verify under representative load.' },
+    ],
+    exampleLabel: 'SET RESOURCES ON A POD CONTAINER',
+    example: 'apiVersion: v1\nkind: Pod\nmetadata:\n  name: api\nspec:\n  containers:\n    - name: app\n      image: nginx:1.27\n      resources:\n        requests:\n          cpu: 500m\n          memory: 512Mi\n        limits:\n          cpu: "1"\n          memory: 1Gi',
+    question: 'A Pod requests 500m CPU and has a 1 CPU limit. The process wants 1.2 CPU. What is the expected effect?',
+    options: ['The scheduler rejects the Pod because demand is above its request', 'The container is CPU-throttled near its limit while continuing to run', 'The container is OOM-killed because CPU demand exceeded the request'],
+    answer: 1,
+    explanation: 'Requests guide placement and do not cap CPU usage. CPU limits are enforced by throttling; memory limit violations have different behavior and can cause an OOM kill.',
+  },
 }
 
 export default function LearningMaterials({ lessonId, onPass }: { lessonId: string; onPass: () => void }) {
