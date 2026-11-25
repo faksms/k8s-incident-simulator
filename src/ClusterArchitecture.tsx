@@ -121,7 +121,7 @@ export default function ClusterArchitecture({ onComplete }: { onComplete: () => 
                   <ComponentButton name="CRI runtime" icon={<Container/>} selected={selected} active={isActive('CRI runtime')} onSelect={setSelected}/>
                   <ComponentButton name="CNI networking" icon={<Network/>} selected={selected} active={isActive('CNI networking')} onSelect={setSelected}/>
                 </div>
-                <button className={`workload-pod workload-${workloadState.toLowerCase().replaceAll(' ', '-')} ${isActive('Pod') || isActive('ready Pod') ? 'component-active' : ''}`} onClick={() => setSelected('Pod')} aria-label={`Pod lifecycle state: ${workloadState}`}><Boxes size={17}/><span><b>{phase >= 2 ? `Pod · app-${node + 1}` : 'Pod · not created'}</b><small>{workloadState === 'NOT CREATED' ? 'Waiting for workload object' : phase === 2 ? 'ReplicaSet reconcile' : phase === 3 ? 'Scheduler binding' : phase === 4 ? 'Runtime and CNI setup' : 'Probe passed'}</small></span><span className="pod-health">{workloadState}</span></button>
+                <button className={`workload-pod workload-${workloadState.toLowerCase().replace(/ /g, '-')} ${isActive('Pod') || isActive('ready Pod') ? 'component-active' : ''}`} onClick={() => setSelected('Pod')} aria-label={`Pod lifecycle state: ${workloadState}`}><Boxes size={17}/><span><b>{phase >= 2 ? `Pod · app-${node + 1}` : 'Pod · not created'}</b><small>{workloadState === 'NOT CREATED' ? 'Waiting for workload object' : phase === 2 ? 'ReplicaSet reconcile' : phase === 3 ? 'Scheduler binding' : phase === 4 ? 'Runtime and CNI setup' : 'Probe passed'}</small></span><span className="pod-health">{workloadState}</span></button>
               </section>)}
             </div>
           </section>
