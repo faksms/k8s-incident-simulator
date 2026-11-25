@@ -3,6 +3,7 @@ import type { CSSProperties } from 'react'
 import { motion, useReducedMotion } from 'framer-motion'
 import { Activity, ChevronLeft, ChevronRight, HeartPulse, Pause, Play, RefreshCw, RotateCcw, Rocket, Server, ShieldCheck, Waypoints } from 'lucide-react'
 import LessonCoach from './LessonCoach'
+import StepSequenceControls from './StepSequenceControls'
 import './ProbesLesson.css'
 import './ModuleDiagramPolish.css'
 
@@ -103,12 +104,7 @@ export default function ProbesLesson({ onSelect }: { onSelect: (name: string) =>
   return <div className="probes-scene probes-continuous">
     <div className="probe-sim-toolbar">
       <div><span className="probe-live-dot"/> POD HEALTH &amp; TRAFFIC LIFECYCLE</div>
-      <div>
-        <button onClick={previousStep} aria-label="Previous step" disabled={stage === 0}><ChevronLeft size={14}/><span>Previous</span></button>
-        <button onClick={() => setPlaying(value => !value)}>{playing ? <Pause size={14}/> : <Play size={14}/>} {playing ? 'Pause' : 'Play'}</button>
-        <button onClick={nextStep} aria-label="Next step"><ChevronRight size={14}/><span>Next</span></button>
-        <button onClick={reset}><RotateCcw size={14}/> Reset</button>
-      </div>
+      <StepSequenceControls active={stage} total={stages.length} playing={playing} intervalMs={2800} onPrevious={previousStep} onNext={nextStep} onToggle={() => setPlaying(value => !value)} onReset={reset} compact />
     </div>
 
     <motion.section key={stage} className={`probe-lifecycle-workbench ${startupBlocked || readinessBlocked || killed ? 'probe-lifecycle-failure' : ''}`} initial={{ opacity: .7, y: 5 }} animate={{ opacity: 1, y: 0 }}>
@@ -176,26 +172,6 @@ export default function ProbesLesson({ onSelect }: { onSelect: (name: string) =>
       <button className={startupFailure ? 'failure-active' : ''} onClick={() => toggleFailure('startup')}><Rocket size={14}/> Startup failure</button>
       <button className={readinessFailure ? 'failure-active' : ''} onClick={() => toggleFailure('readiness')}><HeartPulse size={14}/> Readiness failure</button>
       <button className={livenessFailure ? 'failure-active' : ''} onClick={() => toggleFailure('liveness')}><RefreshCw size={14}/> Liveness / kill</button>
-    </div>
-
-    <div className="probe-sequence-controls">
-      <div className="probe-sequence-countdown" style={{ opacity: countdown < 100 ? 1 : undefined }}>
-        <div className="countdown-ring" style={{ background: `conic-gradient(var(--cui-accent) ${countdown}%, var(--cui-panel) 0)` }}>
-          <div className="countdown-center" style={{ fontSize: countdown < 100 ? 12 : undefined }}>{countdown < 100 ? Math.round(countdown / 10) : undefined}</div>
-        </div>
-      </div>
-
-      <div className="probe-sequence-steps">
-        <button className="probe-sequence-control" onClick={previousStep} disabled={stage === 0}>
-          <ChevronLeft size={16}/>
-          <div>Previous</div>
-        </button>
-
-        <button className="probe-sequence-control" onClick={nextStep} disabled={stage >= stages.length - 1}>
-          <div>Next</div>
-          <ChevronRight size={16}/>
-        </button>
-      </div>
     </div>
 
     <LessonCoach task="Watch the boot lifecycle, then trigger startup, readiness, or liveness failures and see which traffic branch changes." hint="Startup gates the other probes. Readiness removes the endpoint. Liveness kills and restarts the container while preserving the Pod IP." complete={tested.size === 3} success="You compared startup gating, traffic readiness, and container recovery."/>

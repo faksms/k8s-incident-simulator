@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Activity, ArrowRight, Pause, Play, RotateCcw } from 'lucide-react'
 import { motion, useReducedMotion } from 'framer-motion'
+import StepSequenceControls from './StepSequenceControls'
 import './SignalTrace.css'
 
 type SignalTraceProps = {
@@ -21,7 +22,7 @@ export default function SignalTrace({ title, steps, onSelect, playToken }: Signa
       setPlaying(false)
       return
     }
-    const timer = window.setTimeout(() => setActive(current => current + 1), 850)
+    const timer = window.setTimeout(() => setActive(current => current + 1), 2800)
     return () => window.clearTimeout(timer)
   }, [playing, active, steps.length])
 
@@ -50,6 +51,21 @@ export default function SignalTrace({ title, steps, onSelect, playToken }: Signa
     onSelect?.(steps[index])
   }
 
+  function previous() {
+    setPlaying(false)
+    setActive(current => Math.max(0, current - 1))
+  }
+
+  function next() {
+    setPlaying(false)
+    setActive(current => Math.min(steps.length - 1, current + 1))
+  }
+
+  function reset() {
+    setPlaying(false)
+    setActive(0)
+  }
+
   const position = steps.length < 2 ? 50 : 8 + active / (steps.length - 1) * 84
 
   return <section className="signal-trace" aria-label={`${title} animated data path`}>
@@ -60,5 +76,6 @@ export default function SignalTrace({ title, steps, onSelect, playToken }: Signa
       {steps.map((step, index) => <button key={`${step}-${index}`} className={`signal-step ${index === active ? 'signal-step-active' : ''} ${index < active ? 'signal-step-done' : ''}`} onClick={() => select(index)} aria-current={index === active ? 'step' : undefined}><span>{String(index + 1).padStart(2, '0')}</span><b>{step}</b>{index < steps.length - 1 && <ArrowRight className="signal-step-arrow" size={13}/>}</button>)}
     </div>
     <p className="signal-step-caption" aria-live="polite">{steps[active]}</p>
+    <StepSequenceControls active={active} total={steps.length} playing={playing} intervalMs={2800} onPrevious={previous} onNext={next} onToggle={() => setPlaying(value => !value)} onReset={reset} compact />
   </section>
 }

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import { Activity, ArrowDown, ArrowRight, Boxes, CheckCircle2, ChevronLeft, ChevronRight, CircleHelp, Cloud, Code2, Container, Database, Network, Pause, Play, RotateCcw, Server, ShieldCheck, Workflow } from 'lucide-react'
 import LessonCoach from './lessons/LessonCoach'
+import StepSequenceControls from './lessons/StepSequenceControls'
 import LearningMaterials from './LearningMaterials'
 import './ClusterArchitecture.css'
 
@@ -45,7 +46,7 @@ export default function ClusterArchitecture({ onComplete }: { onComplete: () => 
         return value
       }
       return value + 1
-    }), 2600)
+    }), 2800)
     return () => window.clearInterval(timer)
   }, [playing])
 
