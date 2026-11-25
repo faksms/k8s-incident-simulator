@@ -1,11 +1,12 @@
 import { useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
-import { motion } from 'framer-motion'
+import { AnimatePresence, motion } from 'framer-motion'
 import { Activity, Cpu, HardDrive, RotateCcw, Server, ShieldCheck } from 'lucide-react'
 import LessonCoach from './LessonCoach'
 import SignalTrace from './SignalTrace'
 import './ResourceRequestsLesson.css'
 import './ResourceRequestsLive.css'
+import './ResourceRequestsShowcase.css'
 import './ModuleDiagramPolish.css'
 
 type PodState = 'Pending' | 'Running' | 'Throttled' | 'OOMKilled' | 'Invalid'
@@ -104,6 +105,7 @@ export default function ResourceRequestsLesson({ onSelect }: { onSelect: (name: 
             <ResourceMeter title="MEMORY" icon={<HardDrive size={17}/>} demand={memoryDemand} request={memoryRequest} limit={memoryLimit} ceiling={2048} unit="Mi" state={podState}/>
           </div>
           <div className="monitor-metrics"><div><span>QOS CLASS</span><b>{cpuRequest===cpuLimit&&memoryRequest===memoryLimit?'Guaranteed':'Burstable'}</b></div><div><span>CPU PRESSURE</span><b>{fitsNode&&!invalidLimits&&cpuDemand>cpuLimit?`${Math.round((cpuDemand-cpuLimit)/cpuDemand*100)}% throttled`:'Within limit'}</b></div><div><span>POD STATE</span><b>{podState}</b></div></div>
+          <AnimatePresence mode="wait"><motion.div key={podState} className={`live-state-message live-state-${podState.toLowerCase()}`} initial={{opacity:0,y:7}} animate={{opacity:1,y:0}} exit={{opacity:0,y:-5}} transition={{duration:.18}}><i/><span><b>{podState==='OOMKilled'?'CONTAINER TERMINATED · EXIT 137':podState==='Throttled'?'CPU CFS THROTTLING':podState==='Pending'?'SCHEDULER · NO FIT':podState==='Invalid'?'INVALID RESOURCE CONFIG':'CONTAINER RUNNING'}</b><small>{podState==='OOMKilled'?'Memory limit exceeded; restart depends on the Pod restart policy.':podState==='Throttled'?'CPU demand is capped at the configured limit; the process remains alive.':podState==='Pending'?'Requests exceed remaining node allocatable capacity.':'Live usage is below the configured memory and CPU limits.'}</small></span></motion.div></AnimatePresence>
         </section>
         <div className="node-pods"><span>WORKLOAD PLACEMENT</span><div className="resource-pod existing-pod"><Server size={16}/><b>system-workload</b><small>1200m · 1024Mi requests</small></div>
           <motion.button layout className={`resource-pod app-pod state-${podState.toLowerCase()}`} onClick={() => onSelect('Application Pod')}><Activity size={17}/><b>api-pod</b><small>{cpuRequest}m · {memoryRequest}Mi requests</small><strong>{podState}</strong></motion.button>
@@ -126,7 +128,7 @@ export default function ResourceRequestsLesson({ onSelect }: { onSelect: (name: 
       </section>
     </div>
     <SignalTrace title="REQUEST TO RUNTIME" steps={['Pod declares requests', 'scheduler checks node', 'container receives resources', podState === 'OOMKilled' ? 'memory OOM kill' : podState === 'Throttled' ? 'CPU throttling' : 'runtime use within limits']} onSelect={step => onSelect(step)}/>
-    <div className={`resource-outcome outcome-${displayState.toLowerCase()}`} aria-live="polite"><span className="outcome-indicator"/><div><b>Pod state · {displayState}</b><p>{displayText}</p></div><small>LIVE SIMULATION</small></div>
+    <motion.div key={displayState} className={`resource-outcome outcome-${displayState.toLowerCase()}`} aria-live="polite" initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} transition={{duration:.2}}><span className="outcome-indicator"/><div><b>Pod state · {displayState}</b><p>{displayText}</p></div><small>LIVE SIMULATION</small></motion.div>
     <p className="resource-note"><b>Scheduling:</b> the scheduler uses requests, not limits, when checking whether this Pod fits. <b>Runtime:</b> CPU can be throttled; exceeding a memory limit can cause an OOM kill. This model is simplified and does not emulate kernel or node-pressure behavior.</p>
     <LessonCoach task="Choose CPU pressure, then Memory pressure. Watch each meter cross its limit and the live Pod state change without pressing Run." hint="CPU is compressible: demand over limit causes throttling. Memory is not compressible: demand over limit can OOM-kill the container. Requests affect scheduling capacity; changing a request does not cap runtime use." complete={observedThrottle && observedOom} success="You observed live CPU throttling and a memory OOM outcome as workload demand crossed each limit."/>
   </div>
@@ -140,8 +142,10 @@ function ResourceMeter({ title, icon, demand, request, limit, ceiling, unit, sta
   const percent = (value: number) => Math.min(100, Math.max(0, value / ceiling * 100))
   const canRun = state !== 'Pending' && state !== 'Invalid'
   const overLimit = canRun && demand > limit
+  const meterStatus = !canRun ? 'NOT SCHEDULED' : state === 'OOMKilled' ? title === 'MEMORY' ? 'OOM KILLED' : 'PROCESS EXITED' : state === 'Throttled' && title === 'CPU' ? 'THROTTLING' : overLimit ? 'OVER LIMIT' : 'WITHIN LIMIT'
+  const alertState = overLimit && state !== 'OOMKilled'
   const format = (value: number) => `${value}${unit}`
-  return <section className={`resource-meter meter-${title.toLowerCase()} ${overLimit ? 'meter-over-limit' : ''}`} aria-label={`${title} demand ${format(demand)}, request ${format(request)}, limit ${format(limit)}`}>
+  return <section className={`resource-meter meter-${title.toLowerCase()} ${alertState || state === 'OOMKilled' && title === 'MEMORY' ? 'meter-over-limit' : ''}`} aria-label={`${title} demand ${format(demand)}, request ${format(request)}, limit ${format(limit)}, state ${meterStatus}`}>
     <header><span>{icon}<b>{title}</b></span><strong>{format(demand)} <small>/ {format(ceiling)}</small></strong></header>
     <div className="meter-plot">
       <div className="meter-threshold meter-request" style={{ left: `${percent(request)}%` }}><span>REQ {format(request)}</span></div>
@@ -149,7 +153,7 @@ function ResourceMeter({ title, icon, demand, request, limit, ceiling, unit, sta
       <div className="meter-track"><motion.i className={`meter-usage ${state === 'OOMKilled' && title === 'MEMORY' || state === 'Throttled' && title === 'CPU' ? 'meter-usage-alert' : ''}`} animate={{ width: `${percent(demand)}%` }} transition={{ type: 'spring', stiffness: 100, damping: 20 }}/></div>
       <motion.span className="meter-current-marker" animate={{ left: `${percent(demand)}%` }} transition={{ type: 'spring', stiffness: 100, damping: 20 }}/>
     </div>
-    <footer><span>REQUEST {format(request)}</span><span className={overLimit ? 'meter-state-alert' : ''}>{!canRun ? 'NOT SCHEDULED' : overLimit ? title === 'CPU' ? 'THROTTLING' : 'OOM RISK' : 'WITHIN LIMIT'}</span></footer>
+    <footer><span>REQUEST {format(request)}</span><span className={alertState || state === 'OOMKilled' ? 'meter-state-alert' : ''}>{meterStatus}</span></footer>
   </section>
 }
 
