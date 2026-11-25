@@ -1,0 +1,11 @@
+.lesson-coach{margin:14px 8px;padding:15px 17px;border-radius:7px;font-size:13px;line-height:1.6}
+.lesson-coach-heading{gap:8px;font-size:10px;letter-spacing:.06em}
+.lesson-coach-heading svg{width:17px;height:17px}
+.lesson-coach>p{margin:10px 0;color:#e3ebf3;font-size:14px;line-height:1.6}
+.lesson-coach-success{gap:8px;margin-top:10px;font-size:13px;line-height:1.6}
+.lesson-coach-success svg{width:17px;height:17px}
+.lesson-coach details{margin-top:11px;padding-top:10px}
+.lesson-coach summary{gap:7px;font-size:12px}
+.lesson-coach summary svg{width:15px;height:15px}
+.lesson-coach details p{margin:8px 0 0 22px;color:#b1c0cf;font-size:13px;line-height:1.65}
+@media(max-width:600px){.lesson-coach{margin:12px 4px;padding:13px}.lesson-coach>p{font-size:13px}}

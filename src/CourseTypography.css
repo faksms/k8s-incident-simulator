@@ -1,0 +1,21 @@
+.course-header{min-height:72px;height:auto;padding-top:10px;padding-bottom:10px}
+.course-brand b{font-size:15px}
+.course-brand small{font-size:10px;letter-spacing:.08em}
+.course-progress-label{font-size:11px}
+.course-skip{font-size:12px}
+.course-step{min-height:56px;gap:9px;padding:9px}
+.course-step>span{width:26px;height:26px;font-size:11px}
+.course-step b{font-size:11px;line-height:1.35}
+.course-kicker{font-size:11px}
+.lesson-copy h1{font-size:31px;line-height:1.2}
+.lesson-description{font-size:15px;line-height:1.7}
+.learning-takeaway{font-size:14px;line-height:1.65}
+.learning-takeaway b{font-size:10px}
+.lesson-instruction{font-size:13px;line-height:1.55}
+.component-explanation{font-size:14px;line-height:1.65}
+.component-explanation p{font-size:13px;line-height:1.65}
+.course-footer{font-size:11px}
+.course-footer button{font-size:13px}
+.course-safety,.course-accessibility{font-size:11px;line-height:1.6}
+@media(max-width:900px){.course-step b{font-size:10px}.lesson-copy h1{font-size:28px}}
+@media(max-width:600px){.course-header{min-height:64px}.course-brand small{font-size:9px}.course-progress-label{font-size:10px}.course-step{min-height:42px}.course-step>span{width:23px;height:23px}.lesson-copy h1{font-size:27px}.lesson-description{font-size:14px}.learning-takeaway{font-size:13px}.lesson-instruction{font-size:12px}.course-footer{gap:7px}.course-footer button{font-size:12px}}

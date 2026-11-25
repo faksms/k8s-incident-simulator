@@ -1,5 +1,6 @@
 import { CheckCircle2, CircleHelp, Target } from 'lucide-react'
 import './LessonCoach.css'
+import './LessonCoachPolish.css'
 
 type LessonCoachProps = {
   task: string

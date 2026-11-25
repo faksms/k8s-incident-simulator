@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { BookOpen, Check, CircleCheck, Clipboard, Terminal } from 'lucide-react'
 import './LearningMaterials.css'
+import './LearningMaterialsPolish.css'
 
 type Material = {
   title: string
