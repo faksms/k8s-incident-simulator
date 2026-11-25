@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react'
-import type { CSSProperties, ReactNode } from 'react'
-import { Activity, ArrowDown, ArrowRight, Boxes, CheckCircle2, ChevronLeft, ChevronRight, CircleHelp, Cloud, Code2, Container, Database, Network, Pause, Play, RotateCcw, Server, ShieldCheck, Workflow } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import type { ReactNode } from 'react'
+import { Activity, ArrowRight, Boxes, CheckCircle2, ChevronLeft, ChevronRight, CircleHelp, Cloud, Code2, Container, Database, Network, Pause, Play, RotateCcw, Server, ShieldCheck, Workflow } from 'lucide-react'
 import LessonCoach from './lessons/LessonCoach'
 import StepSequenceControls from './lessons/StepSequenceControls'
 import LearningMaterials from './LearningMaterials'
@@ -21,11 +21,11 @@ type CommunicationLeg = { from: string; to: string; label: string }
 const communicationFlows: CommunicationLeg[][] = [
   [{ from: 'kubectl', to: 'API server', label: 'kubectl submits the workload manifest to the API server' }],
   [{ from: 'API server', to: 'etcd', label: 'API server persists the accepted desired state in etcd' }],
-  [{ from: 'Controller manager', to: 'API server', label: 'Controller manager watches observed state and reconciles through the API' }],
-  [{ from: 'Scheduler', to: 'API server', label: 'Scheduler evaluates the Pod and records its node binding through the API' }, { from: 'API server', to: 'kubelet', label: 'Kubelet receives the assigned-Pod watch update from the API' }],
-  [{ from: 'kubelet', to: 'CRI runtime', label: 'Kubelet asks the CRI runtime to start the container' }, { from: 'CRI runtime', to: 'CNI networking', label: 'Runtime delegates Pod network setup to CNI' }, { from: 'CNI networking', to: 'Pod', label: 'CNI assigns the sandbox address and connects the Pod' }],
-  [{ from: 'kubelet', to: 'API server', label: 'Kubelet reports Pod and probe status to the API' }, { from: 'API server', to: 'Controller manager', label: 'Controller manager observes status and continues reconciliation' }],
-  [{ from: 'Client', to: 'kube-proxy / eBPF', label: 'Client traffic reaches the Service data-plane implementation' }, { from: 'kube-proxy / eBPF', to: 'ready Pod', label: 'Data plane forwards the packet to an eligible ready Pod' }],
+  [{ from: 'Controller manager', to: 'API server', label: 'Controller manager observes state and reconciles through the API server' }],
+  [{ from: 'Scheduler', to: 'API server', label: 'Scheduler binds the Pod to a node through the API server' }],
+  [{ from: 'API server', to: 'kubelet', label: 'API server watches assign the Pod to kubelet' }, { from: 'kubelet', to: 'CRI runtime', label: 'kubelet instructs CRI runtime to start the container' }, { from: 'CRI runtime', to: 'Pod app-1', label: 'container runtime starts Pod app-1' }],
+  [{ from: 'Pod app-1', to: 'kubelet', label: 'Pod app-1 reports status to kubelet' }, { from: 'kubelet', to: 'API server', label: 'kubelet reports health to the API server' }],
+  [{ from: 'Client', to: 'kube-proxy / eBPF', label: 'client traffic reaches the Service data plane' }, { from: 'kube-proxy / eBPF', to: 'Pod app-1', label: 'Service traffic reaches Pod app-1' }],
 ]
 
 const componentInfo: Record<string, string> = {
@@ -49,9 +49,53 @@ export default function ClusterArchitecture({ onComplete }: { onComplete: () => 
   const [selected, setSelected] = useState('')
   const [knowledgePassed, setKnowledgePassed] = useState(false)
   const [legIndex, setLegIndex] = useState(0)
+  const mapRef = useRef<HTMLDivElement>(null)
+  const [flowGeometry, setFlowGeometry] = useState<{ width:number; height:number; path:string; color:string }>({ width:0, height:0, path:'', color:'#34d399' })
   const current = phases[phase]
   const flow = communicationFlows[phase]
-  const activeLeg = flow[legIndex] ?? flow[0]
+  const activeLeg = flow[0]
+  const stepColor = phase === 5 ? '#fbbf24' : phase === 4 || phase === 6 ? '#38bdf8' : '#34d399'
+
+  useEffect(() => {
+    function measureActiveFlow() {
+      const map = mapRef.current
+      if (!map) return
+      const mapRect = map.getBoundingClientRect()
+      const points = stepNames(phase).map(name => {
+        const card = name === 'Pod app-1'
+          ? map.querySelector('[data-component="Pod app-1"]')
+          : name === 'Client'
+            ? map.querySelector('[data-component="Client"]')
+            : Array.from(map.querySelectorAll<HTMLElement>('[data-component]')).find(element => element.dataset.component === name) ?? null
+        if (!(card instanceof HTMLElement)) return null
+        const rect = card.getBoundingClientRect()
+        return { x: rect.left - mapRect.left + rect.width / 2, y: rect.top - mapRect.top + rect.height / 2 }
+      }).filter((point): point is {x:number;y:number} => point !== null)
+
+      if (points.length < 2) {
+        setFlowGeometry({ width:mapRect.width, height:mapRect.height, path:'', color:stepColor })
+        return
+      }
+
+      let path = `M ${points[0].x} ${points[0].y}`
+      for (let index = 1; index < points.length; index += 1) {
+        const start = points[index - 1]
+        const end = points[index]
+        const horizontal = Math.abs(end.x - start.x) * 0.5
+        path += ` C ${start.x + horizontal} ${start.y}, ${end.x - horizontal} ${end.y}, ${end.x} ${end.y}`
+      }
+      setFlowGeometry({ width:mapRect.width, height:mapRect.height, path, color:stepColor })
+    }
+
+    measureActiveFlow()
+    window.addEventListener('resize', measureActiveFlow)
+    const observer = typeof ResizeObserver !== 'undefined' && mapRef.current ? new ResizeObserver(measureActiveFlow) : null
+    if (observer && mapRef.current) observer.observe(mapRef.current)
+    return () => {
+      window.removeEventListener('resize', measureActiveFlow)
+      observer?.disconnect()
+    }
+  }, [phase, legIndex, stepColor])
 
   useEffect(() => {
     if (!playing) return
@@ -92,14 +136,8 @@ export default function ClusterArchitecture({ onComplete }: { onComplete: () => 
     setPlaying(value => !value)
   }
 
-  const isActive = (name: string) => {
-    const normalized = name.toLowerCase()
-    const from = activeLeg.from.toLowerCase()
-    const to = activeLeg.to.toLowerCase()
-    if (normalized === 'pod') return to === 'pod' || to === 'ready pod'
-    if (normalized === 'ready pod') return to === 'ready pod'
-    return from === normalized || to === normalized
-  }
+  const activeStepNames = stepNames(phase)
+  const isActive = (name: string) => activeStepNames.some(participant => participant.toLowerCase() === name.toLowerCase() || ((name === 'Pod' || name === 'Pod app-1') && participant === 'Pod app-1'))
   const isSource = (name: string) => activeLeg.from.toLowerCase() === name.toLowerCase()
   const isDestination = (name: string) => activeLeg.to.toLowerCase() === name.toLowerCase()
   const workloadState = phase === 0 || phase === 1
@@ -127,8 +165,15 @@ export default function ClusterArchitecture({ onComplete }: { onComplete: () => 
 
       <section className="architecture-board" aria-label="Interactive Kubernetes architecture diagram">
         <div className="board-topline"><span><Activity size={15}/> LIVE ARCHITECTURE MAP</span><span>CONTROL PLANE <ArrowRight size={13}/> NODE AGENTS <ArrowRight size={13}/> WORKLOAD</span></div>
-        <div className={`architecture-map map-phase-${phase}`}>
-          <span className="architecture-map-packet" style={packetPosition(activeLeg.from, activeLeg.to)} key={`map-packet-${phase}-${legIndex}`} aria-hidden="true"/>
+        <div ref={mapRef} className="architecture-map flow-dimming map-phase-${phase}">
+          {flowGeometry.path && <svg id="k8s-flow-overlay" className="k8s-flow-overlay" viewBox={`0 0 ${flowGeometry.width} ${flowGeometry.height}`} preserveAspectRatio="none" aria-hidden="true">
+            <defs>
+              <linearGradient id="k8s-step-gradient" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stopColor={phase === 6 ? '#38bdf8' : stepColor}/><stop offset="100%" stopColor={phase === 6 ? '#34d399' : stepColor}/></linearGradient>
+              <filter id="k8s-packet-glow" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="3" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+            </defs>
+            <path id="k8s-active-flow-path" d={flowGeometry.path} fill="none" stroke={phase === 6 ? 'url(#k8s-step-gradient)' : flowGeometry.color} strokeWidth="3" strokeLinecap="round" strokeDasharray="10 7" className="k8s-flow-path"/>
+            <circle r="4.5" fill={phase === 5 ? '#fbbf24' : flowGeometry.color} filter="url(#k8s-packet-glow)" className="k8s-flow-packet"><animateMotion dur="1.8s" repeatCount="indefinite" rotate="auto"><mpath href="#k8s-active-flow-path"/></animateMotion></circle>
+          </svg>}
           <section className="plane control-plane">
             <div className="plane-heading"><div><Cloud size={17}/><b>CONTROL PLANE</b></div><small>CLUSTER BRAIN · RECONCILES DESIRED STATE</small></div>
             <div className="control-components">
@@ -141,21 +186,18 @@ export default function ClusterArchitecture({ onComplete }: { onComplete: () => 
             </div>
           </section>
 
-          <div className="architecture-bridge" aria-hidden="true"><div className={`bridge-line ${phase < 6 ? 'bridge-control-active' : 'bridge-data-active'}`}><span className="bridge-packet" key={`bridge-${phase}`}/></div><span>API / NODE BOUNDARY</span><div className="bridge-arrow"><ArrowDown size={16}/></div></div>
-
           <section className="plane worker-plane">
             <div className="plane-heading"><div><Server size={17}/><b>WORKER NODES</b></div><small>DATA PLANE · RUNS APPLICATION WORKLOADS</small></div>
             <div className="worker-grid">
               {[0, 1].map(node => <section className="worker-node" key={node}>
                 <div className="worker-title"><Server size={15}/><b>NODE 0{node + 1}</b><span>HEALTHY</span></div>
                 <div className="node-components">
-                  <ComponentButton name="Client" icon={<Network/>} selected={selected} active={isActive('Client')} source={isSource('Client')} destination={isDestination('Client')} onSelect={setSelected}/>
                   <ComponentButton name="kubelet" icon={<Activity/>} selected={selected} active={isActive('kubelet')} source={isSource('kubelet')} destination={isDestination('kubelet')} onSelect={setSelected}/>
                   <ComponentButton name="kube-proxy / eBPF" icon={<Network/>} selected={selected} active={isActive('kube-proxy / eBPF')} source={isSource('kube-proxy / eBPF')} destination={isDestination('kube-proxy / eBPF')} onSelect={setSelected}/>
                   <ComponentButton name="CRI runtime" icon={<Container/>} selected={selected} active={isActive('CRI runtime')} source={isSource('CRI runtime')} destination={isDestination('CRI runtime')} onSelect={setSelected}/>
                   <ComponentButton name="CNI networking" icon={<Network/>} selected={selected} active={isActive('CNI networking')} source={isSource('CNI networking')} destination={isDestination('CNI networking')} onSelect={setSelected}/>
                 </div>
-                <button className={`workload-pod workload-${workloadState.toLowerCase().replace(/ /g, '-')} ${isActive('Pod') || isActive('ready Pod') ? 'component-active' : ''}`} onClick={() => setSelected('Pod')} aria-label={`Pod lifecycle state: ${workloadState}`}><Boxes size={17}/><span><b>{phase >= 2 ? `Pod · app-${node + 1}` : 'Pod · not created'}</b><small>{workloadState === 'NOT CREATED' ? 'Waiting for workload object' : phase === 2 ? 'ReplicaSet reconcile' : phase === 3 ? 'Scheduler binding' : phase === 4 ? 'Runtime and CNI setup' : 'Probe passed'}</small></span><span className="pod-health">{workloadState}</span></button>
+                <button data-component={node === 0 ? 'Pod app-1' : 'Pod app-2'} className={`workload-pod workload-${workloadState.toLowerCase().replace(/ /g, '-')} ${isActive('Pod app-1') && node === 0 ? 'component-active' : ''}`} onClick={() => setSelected('Pod')} aria-label={`Pod lifecycle state: ${workloadState}`}><Boxes size={17}/><span><b>{phase >= 2 ? `Pod · app-${node + 1}` : 'Pod · not created'}</b><small>{workloadState === 'NOT CREATED' ? 'Waiting for workload object' : 'Ready for traffic'}</small></span><span className="pod-health">{workloadState}</span></button>
               </section>)}
             </div>
           </section>
@@ -187,12 +229,20 @@ export default function ClusterArchitecture({ onComplete }: { onComplete: () => 
   </main>
 }
 
-function packetPosition(from: string, to: string): CSSProperties {
-  const zone = (name: string) => name.toLowerCase().includes('pod') ? 88 : name.toLowerCase().includes('client') ? 70 : name.toLowerCase().includes('kubelet') || name.toLowerCase().includes('cri') || name.toLowerCase().includes('cni') || name.toLowerCase().includes('proxy') ? 78 : name.toLowerCase().includes('api') || name.toLowerCase().includes('scheduler') || name.toLowerCase().includes('controller') || name.toLowerCase().includes('etcd') || name.toLowerCase().includes('kubectl') ? 22 : 50
-  const row = (name: string) => name.toLowerCase().includes('pod') ? 75 : name.toLowerCase().includes('kubelet') || name.toLowerCase().includes('cri') || name.toLowerCase().includes('cni') || name.toLowerCase().includes('proxy') ? 58 : name.toLowerCase().includes('client') ? 68 : 34
-  return { '--packet-left': `${zone(from)}%`, '--packet-top': `${row(from)}%`, '--packet-to-left': `${zone(to)}%`, '--packet-to-top': `${row(to)}%` } as CSSProperties
+function stepNames(phase:number): string[] {
+  if (phase === 0) return ['kubectl','API server']
+  if (phase === 1) return ['API server','etcd']
+  if (phase === 2) return ['Controller manager','API server']
+  if (phase === 3) return ['Scheduler','API server']
+  if (phase === 4) return ['API server','kubelet','CRI runtime','Pod app-1']
+  if (phase === 5) return ['Pod app-1','kubelet','API server']
+  return ['Client','kube-proxy / eBPF','Pod app-1']
+}
+
+function FlowLink({ active, label, direction }: { active: boolean; label: string; direction: 'right'|'left'|'down'|'up' }) {
+  return <span className={`flow-link flow-link-${direction} ${active ? 'flow-link-active' : ''}`} aria-label={label}><i/><b>{label}</b></span>
 }
 
 function ComponentButton({ name, icon, selected, active, source, destination, onSelect }: { name: string; icon: ReactNode; selected: string; active: boolean; source?: boolean; destination?: boolean; onSelect: (name: string) => void }) {
-  return <button className={`architecture-component ${active ? 'component-active' : ''} ${source ? 'component-source' : ''} ${destination ? 'component-destination' : ''} ${selected === name ? 'component-selected' : ''}`} onClick={() => onSelect(name)} aria-pressed={selected === name}><span className="component-icon">{icon}</span><span className="component-label">{name}</span>{active && <i className="component-pulse"/>}</button>
+  return <button data-component={name} className={`architecture-component ${active ? 'component-active' : ''} ${source ? 'component-source' : ''} ${destination ? 'component-destination' : ''} ${selected === name ? 'component-selected' : ''}`} onClick={() => onSelect(name)} aria-pressed={selected === name}><span className="component-icon">{icon}</span><span className="component-label">{name}</span>{active && <i className="component-pulse"/>}</button>
 }
