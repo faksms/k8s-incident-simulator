@@ -1,113 +1,111 @@
 import { useEffect, useState } from 'react'
 import { motion, useReducedMotion } from 'framer-motion'
-import { Activity, HeartPulse, Pause, Play, Rocket, RotateCcw, ShieldCheck } from 'lucide-react'
+import { Activity, HeartPulse, Pause, Play, RefreshCw, Rocket, RotateCcw, ShieldCheck, Waypoints } from 'lucide-react'
 import LessonCoach from './LessonCoach'
 import './ProbesLesson.css'
 import './ModuleDiagramPolish.css'
 
-type Probe = 'startup' | 'readiness' | 'liveness'
-
-type ProbeState = {
-  startup: 'waiting' | 'success' | 'failure'
-  readiness: 'ready' | 'not-ready'
-  liveness: 'healthy' | 'failure'
-}
-
-const probeInfo:Record<Probe,{title:string;icon:typeof Rocket;color:string;endpoint:string;success:string;failure:string}>={
-  startup:{title:'Startup probe',icon:Rocket,color:'#73bff0',endpoint:'/started',success:'Application initialization complete. Startup gate opened.',failure:'Initialization failed. Readiness and liveness remain gated.'},
-  readiness:{title:'Readiness probe',icon:Activity,color:'#76ddb5',endpoint:'/ready',success:'Pod is Ready. Service endpoints include this Pod.',failure:'Pod is NotReady. It was removed from Service endpoints.'},
-  liveness:{title:'Liveness probe',icon:HeartPulse,color:'#ff9d78',endpoint:'/healthz',success:'Liveness recovered. Container remains running.',failure:'Liveness failed. Container restart is triggered.'},
-}
+const stages = [
+  {title:'CONTAINER BOOT',detail:'Kubelet starts the container and waits for the process to initialize.'},
+  {title:'STARTUP PROBE',detail:'The kubelet calls /started until application initialization succeeds.'},
+  {title:'STARTUP GATE',detail:'Startup probe success opens readiness and liveness checks.'},
+  {title:'READINESS PROBE',detail:'The kubelet checks /ready before publishing Pod 10.244.1.8.'},
+  {title:'ENDPOINT UPDATE',detail:'EndpointSlice membership is updated for Service 10.96.20.40.'},
+  {title:'CLUSTERIP TRAFFIC',detail:'ClusterIP sends traffic only to Ready Pods.'},
+  {title:'LIVENESS PROBE',detail:'The kubelet periodically calls /healthz to detect an unrecoverable process.'},
+  {title:'HEALTH RESULT',detail:'Success keeps the container running; failure enters recovery.'},
+  {title:'CONTAINER KILL',detail:'Liveness failure kills the container and removes its process from the node.'},
+  {title:'CONTAINER RESTART',detail:'The runtime restarts the container in the existing Pod network namespace.'},
+  {title:'BOOT AGAIN',detail:'Startup runs again before readiness traffic is restored.'},
+]
 
 export default function ProbesLesson({onSelect}:{onSelect:(name:string)=>void}){
-  const [active,setActive]=useState<Probe>('startup')
-  const [state,setState]=useState<ProbeState>({startup:'waiting',readiness:'ready',liveness:'healthy'})
-  const [playing,setPlaying]=useState(false)
-  const [phase,setPhase]=useState(0)
+  const [stage,setStage]=useState(0)
+  const [playing,setPlaying]=useState(true)
+  const [startupFailure,setStartupFailure]=useState(false)
+  const [readinessFailure,setReadinessFailure]=useState(false)
+  const [livenessFailure,setLivenessFailure]=useState(false)
   const [restartCount,setRestartCount]=useState(0)
-  const [eventCount,setEventCount]=useState(0)
-  const [tested,setTested]=useState<Set<Probe>>(()=>new Set())
+  const [tested,setTested]=useState<Set<string>>(()=>new Set())
   const reducedMotion=useReducedMotion()
-  const info=probeInfo[active]
-  const Icon=info.icon
 
   useEffect(()=>{
-    if(!playing)return
-    if(reducedMotion){setPhase(3);setPlaying(false);return}
-    if(phase>=3){setPlaying(false);return}
-    const timer=window.setTimeout(()=>setPhase(current=>current+1),950)
+    if(!playing||reducedMotion)return
+    const timer=window.setTimeout(()=>{
+      setStage(current=>{
+        if(current===1&&startupFailure)return 1
+        if(current===3&&readinessFailure)return 4
+        if(current===7&&livenessFailure)return 8
+        if(current===8)return 9
+        if(current===9){setRestartCount(value=>value+1);return 10}
+        if(current===10)return 0
+        return current+1
+      })
+    },stage===8||stage===9?1350:900)
     return ()=>window.clearTimeout(timer)
-  },[playing,phase,reducedMotion])
+  },[playing,reducedMotion,stage,startupFailure,readinessFailure,livenessFailure])
 
-  useEffect(()=>{
-    if(!playing)return
-    if(phase===1)setEventCount(value=>value+1)
-  },[phase,playing])
+  useEffect(()=>{if(stage===8)setRestartCount(value=>value)},[stage])
 
-  function run(failure=false){
-    setTested(current=>new Set(current).add(active))
-    setPhase(0)
-    setPlaying(!reducedMotion)
-    if(reducedMotion)setPhase(3)
+  function reset(){setStage(0);setRestartCount(0);setStartupFailure(false);setReadinessFailure(false);setLivenessFailure(false);setPlaying(true);setTested(new Set())}
 
-    if(active==='startup') setState(current=>({...current,startup:failure?'failure':'success'}))
-    if(active==='readiness') setState(current=>({...current,readiness:failure?'not-ready':'ready'}))
-    if(active==='liveness'){
-      setState(current=>({...current,liveness:failure?'failure':'healthy'}))
-      if(failure)setRestartCount(value=>value+1)
-    }
+  const startupBlocked=stage===1&&startupFailure
+  const readinessBlocked=stage>=3&&readinessFailure
+  const killed=stage===8||(stage===9&&livenessFailure)
+  const endpointEligible=!readinessBlocked&&!startupBlocked&&!killed
+  const current=stages[stage]
+
+  function toggleFailure(type:'startup'|'readiness'|'liveness'){
+    if(type==='startup')setStartupFailure(value=>{setTested(current=>new Set(current).add('startup'));return !value})
+    if(type==='readiness')setReadinessFailure(value=>{setTested(current=>new Set(current).add('readiness'));return !value})
+    if(type==='liveness')setLivenessFailure(value=>{setTested(current=>new Set(current).add('liveness'));return !value})
   }
 
-  function reset(){
-    setPlaying(false);setPhase(0);setEventCount(0);setRestartCount(0)
-    setState({startup:'waiting',readiness:'ready',liveness:'healthy'})
-  }
-
-  function togglePlayback(){
-    if(playing){setPlaying(false);return}
-    setPhase(0)
-    setPlaying(!reducedMotion)
-    if(reducedMotion)setPhase(3)
-  }
-
-  const startupFailed=state.startup==='failure'
-  const readinessFailed=state.readiness==='not-ready'
-  const livenessFailed=state.liveness==='failure'
-  const activeFailure=active==='startup'?startupFailed:active==='readiness'?readinessFailed:livenessFailed
-
-  return <div className={`probes-scene ${activeFailure?'probes-failure':''}`}>
-    <div className="probe-tabs" role="tablist" aria-label="Container probes">
-      {(Object.keys(probeInfo) as Probe[]).map(key=>{const item=probeInfo[key];const ProbeIcon=item.icon;const failure=key==='startup'?startupFailed:key==='readiness'?readinessFailed:livenessFailed;return <button key={key} role="tab" aria-selected={active===key} className={`${active===key?'probe-tab-active':''} ${failure?'probe-tab-failed':''}`} onClick={()=>{setActive(key);setPhase(0);setPlaying(false);onSelect(item.title)}}><ProbeIcon size={15}/><b>{item.title}</b><small>{key==='startup'?'INITIALIZATION':key==='readiness'?'TRAFFIC ELIGIBILITY':'PROCESS HEALTH'}{failure?' · FAILURE':''}</small></button>})}
+  return <div className="probes-scene probes-continuous">
+    <div className="probe-sim-toolbar">
+      <div><span className="probe-live-dot"/> CONTINUOUS POD LIFECYCLE</div>
+      <div><button onClick={()=>setPlaying(value=>!value)}>{playing?<Pause size={14}/>:<Play size={14}/>} {playing?'Pause':'Play'}</button><button onClick={reset}><RotateCcw size={14}/> Reset</button></div>
     </div>
 
-    <motion.section key={active} className="probe-workbench" initial={{opacity:0,y:7}} animate={{opacity:1,y:0}}>
-      <header><span><Icon size={18}/> LIVE PROBE FLOW</span><div><small>EVENTS {String(eventCount).padStart(2,'0')}</small><button onClick={togglePlayback} aria-label={playing?'Pause probe flow':'Play probe flow'}>{playing?<Pause size={14}/>:<Play size={14}/>}</button><button onClick={reset} aria-label="Reset probe simulation"><RotateCcw size={14}/></button></div></header>
+    <motion.section className={`probe-lifecycle-workbench ${startupBlocked||readinessBlocked||killed?'probe-lifecycle-failure':''}`} key={stage} initial={{opacity:.72,y:6}} animate={{opacity:1,y:0}}>
+      <header>
+        <div><small>{String(stage+1).padStart(2,'0')} / {String(stages.length).padStart(2,'0')}</small><b>{current.title}</b></div>
+        <span className="probe-phase-status">{killed?'CONTAINER KILLED':startupBlocked?'STARTUP BLOCKED':readinessBlocked?'NOT READY':'LIVE'}</span>
+      </header>
 
-      <div className="probe-flow" aria-label={`${info.title} animated flow`}>
-        <span className="probe-flow-line"/>
-        <motion.i className="probe-flow-packet" animate={{left:phase===0?'9%':phase===1?'38%':phase===2?'68%':'91%'}} transition={reducedMotion?{duration:0}:{type:'spring',stiffness:95,damping:18}}/>
+      <div className="pod-lifecycle-map">
+        <motion.div className="lifecycle-packet" animate={{left: `${8+stage*(84/(stages.length-1))}%`}} transition={reducedMotion?{duration:0}:{type:'spring',stiffness:70,damping:16}}/>
 
-        <button className={`probe-node kubelet-node ${phase===0?'node-active':''}`} onClick={()=>onSelect('Kubelet')}><ShieldCheck size={18}/><b>kubelet</b><small>probe worker</small></button>
-        <motion.button className={`probe-node request-node ${phase===1?'node-active':''} ${activeFailure?'node-failed':''}`} onClick={()=>onSelect(info.title)} animate={activeFailure&&phase>=1?{scale:[1,.96,1]}:{scale:1}} transition={{duration:.7,repeat:activeFailure&&phase>=1?Infinity:0}}><Icon size={18}/><b>{info.title}</b><small>{info.endpoint}</small></motion.button>
-        <button className={`probe-node container-node ${phase===2?'node-active':''} ${livenessFailed?'node-failed':''}`} onClick={()=>onSelect('Application container')}><Activity size={18}/><b>container</b><small>{livenessFailed?'RESTARTING':active==='startup'&&startupFailed?'NOT STARTED':active==='readiness'&&readinessFailed?'NOT READY':'RUNNING'}</small></button>
-        <button className={`probe-node endpoint-node ${phase===3?'node-active':''} ${readinessFailed?'endpoint-blocked':''}`} onClick={()=>onSelect('Service endpoints')}><HeartPulse size={18}/><b>Service endpoint</b><small>{readinessFailed?'REMOVED':'ELIGIBLE'}</small></button>
+        <motion.button className={`lifecycle-node kubelet-node ${stage<=2?'lifecycle-node-active':''}`} onClick={()=>onSelect('Kubelet')}><ShieldCheck size={18}/><b>Kubelet</b><small>probe orchestration</small></motion.button>
+
+        <motion.button className={`lifecycle-node startup-node ${stage===1?'lifecycle-node-active':''} ${startupBlocked?'lifecycle-node-failed':''}`} onClick={()=>onSelect('Startup probe')}><Rocket size={18}/><b>Startup</b><small>/started · {startupBlocked?'FAILURE':'gate'}</small></motion.button>
+
+        <motion.button className={`lifecycle-node container-node ${stage===0||stage>=8?'lifecycle-node-active':''} ${killed?'lifecycle-node-failed':''} ${stage===9?'lifecycle-node-restarting':''}`} onClick={()=>onSelect('Application container')}><Activity size={18}/><b>Container</b><small>{killed?'KILLED':stage===9?'RESTARTING':stage===0?'BOOTING':'RUNNING'}</small></motion.button>
+
+        <motion.button className={`lifecycle-node readiness-node ${stage===3?'lifecycle-node-active':''} ${readinessBlocked?'lifecycle-node-failed':''}`} onClick={()=>onSelect('Readiness probe')}><HeartPulse size={18}/><b>Readiness</b><small>/ready · {readinessBlocked?'NotReady':'Ready'}</small></motion.button>
+
+        <motion.button className={`lifecycle-node service-node ${stage>=4&&stage<=6?'lifecycle-node-active':''} ${!endpointEligible?'lifecycle-node-failed':''}`} onClick={()=>onSelect('Service ClusterIP')}><Waypoints size={18}/><b>ClusterIP</b><small>10.96.20.40</small></motion.button>
+
+        <motion.button className={`lifecycle-node liveness-node ${stage===6||stage===7?'lifecycle-node-active':''} ${stage===7&&livenessFailure?'lifecycle-node-failed':''}`} onClick={()=>onSelect('Liveness probe')}><RefreshCw size={18}/><b>Liveness</b><small>/healthz · {stage===7&&livenessFailure?'KILL':livenessFailure?'armed':'healthy'}</small></motion.button>
+
+        <span className="lifecycle-line one"/><span className="lifecycle-line two"/><span className="lifecycle-line three"/><span className="lifecycle-line four"/>
       </div>
 
-      <motion.div key={`${active}-${activeFailure}-${phase}`} className={`probe-live-result ${activeFailure?'probe-live-failure':''}`} initial={{opacity:0,y:5}} animate={{opacity:1,y:0}} aria-live="polite">
-        <i/><div><b>{phase===0?'WAITING FOR PROBE':active.toUpperCase()+` · ${activeFailure?'FAILURE':'SUCCESS'}`}</b><p>{activeFailure?info.failure:info.success}</p></div><span>{activeFailure?'LIVE FAILURE':'LIVE STATE'}</span>
-      </motion.div>
-
-      <div className="probe-controls">
-        <button className="probe-pass" onClick={()=>run(false)}><Play size={14}/> Simulate success</button>
-        <button className="probe-fail" onClick={()=>run(true)}><HeartPulse size={14}/> Trigger failure</button>
+      <div className="pod-network-state">
+        <div className={killed?'network-killed':''}><small>POD IP</small><b>10.244.1.8</b><span>{killed?'NAMESPACE PAUSED':'NETWORK READY'}</span></div>
+        <div className={!endpointEligible?'endpoint-removed':''}><small>ENDPOINTSLICE</small><b>{endpointEligible?'10.244.1.8:8080':'NO ENDPOINT'}</b><span>{endpointEligible?'READY · RECEIVE':'REMOVED · NO TRAFFIC'}</span></div>
+        <div><small>RESTART POLICY</small><b>Always</b><span>restart #{restartCount}</span></div>
       </div>
+
+      <motion.div className={`probe-explanation ${startupBlocked||readinessBlocked||killed?'probe-explanation-fail':''}`} key={current.title} initial={{opacity:0,x:-8}} animate={{opacity:1,x:0}} aria-live="polite"><i/><div><b>{current.title}</b><p>{startupBlocked?'Startup has not passed. Liveness and readiness stay gated, and no traffic is published.':readinessBlocked?'Readiness failed. The Pod stays running, but EndpointSlice removes it and ClusterIP sends no traffic to 10.244.1.8.':killed?'Liveness failed. kubelet restarts the container, while Pod IP and ClusterIP configuration remain stable.':current.detail}</p></div></motion.div>
     </motion.section>
 
-    <div className="probe-lifecycle">
-      <span className={state.startup==='success'?'lifecycle-active':''}><b>1</b><span><strong>STARTUP</strong>{startupFailed?'blocked':state.startup==='success'?'gate opened':'waiting'}</span></span>
-      <span className={readinessFailed?'lifecycle-failed':state.readiness==='ready'?'lifecycle-active':''}><b>2</b><span><strong>READINESS</strong>{readinessFailed?'NotReady':'Ready endpoint'}</span></span>
-      <span className={livenessFailed?'lifecycle-failed':'lifecycle-active'}><b>3</b><span><strong>LIVENESS</strong>{livenessFailed?`restart ${restartCount}`:'healthy'}</span></span>
+    <div className="probe-failure-controls">
+      <button className={startupFailure?'failure-active':''} onClick={()=>toggleFailure('startup')}><Rocket size={14}/> Startup failure</button>
+      <button className={readinessFailure?'failure-active':''} onClick={()=>toggleFailure('readiness')}><HeartPulse size={14}/> Readiness failure</button>
+      <button className={livenessFailure?'failure-active':''} onClick={()=>toggleFailure('liveness')}><RefreshCw size={14}/> Liveness / kill</button>
     </div>
-    <LessonCoach task="Run success and trigger failure for each probe. Watch the animated packet and observe which Kubernetes behavior changes." hint="Startup can gate the other checks. Readiness controls Service endpoint eligibility. Repeated liveness failure causes a container restart." complete={tested.size===3&&activeFailure===false&&restartCount>0} success="You tested all probe states and saw their live Kubernetes effects."/>
+
+    <LessonCoach task="Let the Pod boot through probes, then enable startup, readiness, or liveness failure and observe exactly what traffic and restart behavior changes." hint="Startup blocks later probes. Readiness removes only endpoint traffic eligibility. Liveness kills and restarts the container but the Pod IP remains stable." complete={tested.size===3} success="You traced the complete probe lifecycle and every traffic or container recovery branch."/>
   </div>
 }
