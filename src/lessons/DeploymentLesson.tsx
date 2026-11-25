@@ -3,18 +3,24 @@ import { motion } from 'framer-motion'
 import { Activity, Cuboid, RotateCcw, Workflow } from 'lucide-react'
 import LessonCoach from './LessonCoach'
 import './DeploymentLesson.css'
+import './DeploymentLessonInteraction.css'
+
+const reconcilePhases=[{name:'OBSERVE',detail:'The ReplicaSet observes fewer Ready replicas than requested.'},{name:'COMPARE',detail:'Observed count is compared with spec.replicas.'},{name:'ACT',detail:'The ReplicaSet creates or removes Pods to match the target.'},{name:'REPEAT',detail:'The controller watches again until observed state converges.'}]
+
 export default function DeploymentLesson({onSelect}:{onSelect:(name:string)=>void}) {
   const [desired,setDesired]=useState(3)
   const [pods,setPods]=useState(3)
   const [recovering,setRecovering]=useState(false)
   const [podDeleted,setPodDeleted]=useState(false)
-  useEffect(()=>{if(!recovering)return;const t=window.setTimeout(()=>{setPods(desired);setRecovering(false)},1300);return()=>window.clearTimeout(t)},[recovering,desired])
+  const [reconcileStep,setReconcileStep]=useState(0)
+  useEffect(()=>{if(!recovering)return;setReconcileStep(0);const interval=window.setInterval(()=>setReconcileStep(value=>Math.min(value+1,reconcilePhases.length-1)),350);const timeout=window.setTimeout(()=>{setPods(desired);setRecovering(false);setReconcileStep(reconcilePhases.length-1)},1400);return()=>{window.clearInterval(interval);window.clearTimeout(timeout)}},[recovering,desired])
   function simulateDelete(){if(recovering||pods===0)return;setPodDeleted(true);setPods(v=>Math.max(0,v-1));setRecovering(true)}
-  function changeDesired(n:number){setDesired(n);if(!recovering)setPods(n)}
+  function changeDesired(n:number){setDesired(n);setPodDeleted(false);setRecovering(true)}
   return <div className="deploy-scene">
     <div className="deploy-toolbar"><span><Workflow size={15}/> DEPLOYMENT CONTROLLER</span><span className={recovering?'reconciling':'synced'}><i/> {recovering?'RECONCILING':'DESIRED STATE SYNCED'}</span></div>
     <div className="deploy-desired"><div><small>SPEC.REPLICAS · DESIRED</small><strong>{desired}</strong></div><input aria-label="Desired replica count" type="range" min="1" max="6" value={desired} onChange={e=>changeDesired(Number(e.target.value))}/><div><small>STATUS.REPLICAS · READY</small><strong>{recovering?pods:pods}</strong></div></div>
-    <div className="reconcile-loop"><span>OBSERVE</span><Activity size={15}/><span>COMPARE</span><Activity size={15}/><span>ACT</span><Activity size={15}/><span>REPEAT</span></div>
+    <div className="reconcile-loop">{reconcilePhases.map((phase,index)=><span className="reconcile-phase-wrap" key={phase.name}><button className={`reconcile-phase ${reconcileStep===index?'reconcile-phase-active':''} ${index<reconcileStep?'reconcile-phase-done':''}`} onClick={()=>{setReconcileStep(index);onSelect(`Reconcile loop: ${phase.name.toLowerCase()}`)}} aria-current={reconcileStep===index?'step':undefined}>{phase.name}</button>{index<reconcilePhases.length-1&&<Activity size={15}/>}</span>)}</div>
+    <p className="reconcile-detail" aria-live="polite">{recovering?'RECONCILING · ':''}{reconcilePhases[reconcileStep].detail}</p>
     <div className="deploy-pods">{Array.from({length:desired},(_,i)=><motion.button key={i} layout className={`deploy-pod ${i>=pods?'pod-pending':''}`} onClick={()=>onSelect(`Replica Pod ${i+1}`)}><Cuboid size={18}/><b>web-{i+1}</b><small>{i<pods?'READY':recovering?'CREATING':'PENDING'}</small></motion.button>)}</div>
     <div className="deploy-actions"><button onClick={simulateDelete} disabled={recovering||pods===0}>Delete a Pod · observe recovery</button><button className="deploy-reset" onClick={()=>{setPods(desired);setRecovering(false);setPodDeleted(false)}}><RotateCcw size={14}/> Reset</button></div>
     <p className="deploy-note">A Deployment owns a ReplicaSet; the ReplicaSet creates replacement Pods. It does not repair the deleted Pod in place.</p>

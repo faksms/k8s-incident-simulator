@@ -7,6 +7,7 @@ import DeploymentLesson from './lessons/DeploymentLesson'
 import ServiceLesson from './lessons/ServiceLesson'
 import TrafficLesson from './lessons/TrafficLesson'
 import TopologyLesson from './lessons/TopologyLesson'
+import ResourceQuotaLesson from './lessons/ResourceQuotaLesson'
 import LearningMaterials from './LearningMaterials'
 import './lessons/CourseShell.css'
 import './CourseTypography.css'
@@ -19,6 +20,7 @@ const lessons:Lesson[] = [
   {id:'services',title:'Services & ready endpoints',subtitle:'04 · DISCOVERY AND ROUTING',body:'A Service provides a stable virtual address. Selectors identify matching Pods, and readiness determines which matching Pods are published as usable endpoints.',takeaway:'Matching labels are not enough: only Ready endpoints should receive traffic.',Component:ServiceLesson},
   {id:'traffic',title:'Ingress to application traffic',subtitle:'05 · REQUEST JOURNEY',body:'External HTTP traffic travels through infrastructure and Kubernetes resources before reaching a container. Watch each hop and distinguish the edge, routing, and workload responsibilities.',takeaway:'Ingress/Gateway routes to a Service; the Service data plane selects a ready Pod.',Component:TrafficLesson},
   {id:'topology',title:'Resilience across failure domains',subtitle:'06 · SCHEDULING AND AVAILABILITY',body:'Topology spread constraints influence placement across zones or nodes. Simulate an outage and see how policy and remaining capacity affect replacement scheduling.',takeaway:'Spread reduces correlated failure risk; it does not create capacity.',Component:TopologyLesson},
+  {id:'resource-quota',title:'Namespace resource quotas',subtitle:'07 · RESOURCE GOVERNANCE',body:'ResourceQuota places hard aggregate limits on namespaced resources. See how the API admission check compares a new workload with the namespace budget before creating Pods.',takeaway:'A workload request is admitted only when all applicable hard quotas have room.',Component:ResourceQuotaLesson},
 ]
 
 function describeSelection(name:string) {
@@ -32,6 +34,12 @@ function describeSelection(name:string) {
     'Ingress / Gateway':'A controller interprets host, path, and listener rules and routes toward a backend Service.',
     'Load balancer':'An external entry point forwards traffic toward the cluster. Provider and controller configuration determine its behavior.',
     'Pod + container':'The final hop reaches a Pod IP and the port on which the application is listening.',
+    'cpu requests quota':'The namespace sums CPU requests across applicable Pods and checks the total against requests.cpu.',
+    'memory requests quota':'The namespace sums memory requests and checks the total against requests.memory.',
+    'Reconcile loop: observe':'The controller reads current workload state from the API and observes how many matching Pods exist.',
+    'Reconcile loop: compare':'The controller compares observed replicas with the desired spec.replicas value.',
+    'Reconcile loop: act':'The ReplicaSet creates or removes Pods to reduce the difference between observed and desired state.',
+    'Reconcile loop: repeat':'Reconciliation continues over time. Controllers respond to changes rather than running once and exiting.',
   }
   if (descriptions[name]) return descriptions[name]
   if (name.startsWith('Replica Pod')) return 'This Pod is one replica in the Deployment workload. If it disappears, the ReplicaSet attempts to create a replacement.'
@@ -55,10 +63,10 @@ export default function KubernetesCourse({onComplete,onSkip}:{onComplete:()=>voi
       <nav className="course-steps" aria-label="Kubernetes learning topics"><button className="course-step done" onClick={onSkip}><span><CheckCircle2 size={15}/></span><b>Cluster architecture</b></button>{lessons.map((item,i)=><button key={item.id} className={`course-step ${index===i?'active':''} ${passedLessons.has(item.id)?'done':''}`} onClick={()=>move(i)} aria-current={index===i?'step':undefined}><span>{passedLessons.has(item.id)?<CheckCircle2 size={15}/>:String(i+2).padStart(2,'0')}</span><b>{item.title}</b></button>)}</nav>
       <section className="lesson-area">
         <div className="lesson-copy"><p className="course-kicker"><Sparkles size={14}/>{lesson.subtitle}</p><h1>{lesson.title}</h1><p className="lesson-description">{lesson.body}</p><div className="learning-takeaway"><BookOpen size={18}/><span><b>OPERATING PRINCIPLE</b>{lesson.takeaway}</span></div><div className="lesson-instruction"><CircleHelp size={17}/>Interact with the simulation; inspect components and watch cluster behavior change.</div>{selected&&<div className="component-explanation"><b>{selected}</b><p>{describeSelection(selected)}</p></div>}</div>
-        <div className="visual-card topic-visual"><div className="visual-top"><span><Sparkles size={15}/> SYSTEMS / EXPLAINED</span><span className="demo-badge">K8S · {String(index+2).padStart(2,'0')}</span></div><AnimatePresence mode="wait"><motion.div key={lesson.id} className="lesson-visual topic-lesson-visual" initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} exit={{opacity:0,y:-8}} transition={{duration:.2}}><Scene onSelect={setSelected}/></motion.div></AnimatePresence><div className="visual-footer"><span><span className="legend-dot"/> SIMULATED CLUSTER</span><span>NO REAL INFRASTRUCTURE</span></div></div>
+        <div className="visual-card topic-visual"><div className="visual-top"><span><Sparkles size={15}/> SYSTEMS / EXPLAINED</span><span className="demo-badge">K8S · {String(index+2).padStart(2,'0')}</span></div><AnimatePresence mode="wait"><motion.div key={lesson.id} className={`lesson-visual topic-lesson-visual topic-lesson-${lesson.id}`} initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} exit={{opacity:0,y:-8}} transition={{duration:.2}}><Scene onSelect={setSelected}/></motion.div></AnimatePresence><div className="visual-footer"><span><span className="legend-dot"/> SIMULATED CLUSTER</span><span>NO REAL INFRASTRUCTURE</span></div></div>
       </section>
       <LearningMaterials key={lesson.id} lessonId={lesson.id} onPass={markPassed}/>
-      <footer className="course-footer"><button className="course-back" onClick={()=>move(index-1)}><ChevronLeft size={17}/> Previous topic</button><span>TOPIC {String(index+2).padStart(2,'0')} / 06</span><button className="course-next" onClick={()=>move(index+1)}>{index===lessons.length-1?'Start incident exercises':'Next topic'} <ChevronRight size={17}/></button></footer>
+      <footer className="course-footer"><button className="course-back" onClick={()=>move(index-1)}><ChevronLeft size={17}/> Previous topic</button><span>TOPIC {String(index+2).padStart(2,'0')} / 07</span><button className="course-next" onClick={()=>move(index+1)}>{index===lessons.length-1?'Start incident exercises':'Next topic'} <ChevronRight size={17}/></button></footer>
       <p className="course-safety"><ShieldCheck size={14}/> Interactive training simulation · no connection to a real cluster.</p>
       <p className="course-accessibility"><CircleHelp size={13}/> Each topic is an independent module; use the topic navigation to revisit concepts.</p>
     </div>

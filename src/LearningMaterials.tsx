@@ -112,6 +112,22 @@ const materials: Record<string, Material> = {
     answer: 1,
     explanation: 'A PDB is about voluntary disruption through eviction-aware operations. It cannot stop involuntary outages and does not reserve node capacity.',
   },
+  'resource-quota': {
+    title: 'ResourceQuota and namespace admission',
+    objective: 'Predict whether a workload fits an aggregate namespace budget and identify which resource request blocks admission.',
+    concepts: [
+      { term: 'Namespace scope', detail: 'A ResourceQuota applies to selected resources in one namespace. It can cap aggregate CPU and memory requests, limits, object counts, and other supported resources.' },
+      { term: 'Admission check', detail: 'Quota admission checks each namespaced object against applicable hard limits. An over-quota Pod is rejected, while other Pods from the same Deployment may still be admitted.' },
+      { term: 'Requests and limits', detail: 'requests.cpu and requests.memory reserve scheduling resources. limits.cpu and limits.memory cap container use. They are separate quota dimensions and must be budgeted separately.' },
+      { term: 'Defaults and diagnosis', detail: 'When a quota tracks requests or limits, Pods generally need those values set directly or supplied by a LimitRange default. Use kubectl describe resourcequota and inspect the rejected object’s admission error.' },
+    ],
+    exampleLabel: 'SET NAMESPACE REQUEST AND LIMIT BUDGETS',
+    example: 'apiVersion: v1\nkind: ResourceQuota\nmetadata:\n  name: team-budget\n  namespace: team-api\nspec:\n  hard:\n    requests.cpu: "4"\n    requests.memory: 8Gi\n    limits.cpu: "8"\n    limits.memory: 16Gi',
+    question: 'A namespace has 2 CPU cores of requests.cpu remaining. A Deployment requests 3 replicas at 750m each. What should you expect?',
+    options: ['All three Pods are admitted because each uses less than 2 cores', 'Two Pods may be admitted; the third Pod admission is rejected until quota is available', 'The Deployment controller silently lowers each request to fit'],
+    answer: 1,
+    explanation: 'Quota is checked for each Pod admission. Two Pods consume 1500m of the 2000m remaining; the third would bring the total to 2250m, so that Pod is rejected while the Deployment remains below its desired replicas.',
+  },
 }
 
 export default function LearningMaterials({ lessonId, onPass }: { lessonId: string; onPass: () => void }) {
