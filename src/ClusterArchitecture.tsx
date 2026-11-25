@@ -7,6 +7,7 @@ import LearningMaterials from './LearningMaterials'
 import { pathSegments, routeBetween } from './architectureRouting'
 import type { RoutingPort, RoutingRect, RoutingSegment } from './architectureRouting'
 import './ClusterArchitecture.css'
+import './ArchitectureReadability.css'
 
 const kubernetesIcons = {
   api: new URL('./assets/kubernetes/api.svg', import.meta.url).href,
