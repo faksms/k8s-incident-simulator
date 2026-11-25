@@ -38,6 +38,9 @@ const materials: Record<string, Material> = {
     concepts: [
       { term: 'Scheduling unit', detail: 'Kubernetes schedules a Pod onto a node. Containers in that Pod are placed together and share its network namespace and IP address.' },
       { term: 'Shared resources', detail: 'Containers may communicate over localhost and can mount the same volume. They still have separate filesystems and processes unless resources are explicitly shared.' },
+      { term: 'Init containers', detail: 'Init containers run in sequence and must finish before application containers start. They are useful for database migrations, credentials, permissions, and other one-time setup.' },
+      { term: 'Sidecars', detail: 'Sidecars run alongside application containers for the Pod lifecycle. Typical roles include log shipping, configuration synchronization, encryption, or auxiliary monitoring.' },
+      { term: 'Ambassadors', detail: 'Ambassadors provide a localhost proxy or adapter for the application. The app can talk to a simple local endpoint while the ambassador handles remote routing, authentication, or protocol translation.' },
       { term: 'Probes', detail: 'Startup probes protect slow initialization, readiness controls whether a Pod receives Service traffic, and liveness can trigger a container restart.' },
       { term: 'Ephemeral identity', detail: 'A Pod is replaceable. A new Pod has a new identity and may receive a different IP; use a controller and Service for stable workload management and discovery.' },
     ],
@@ -144,6 +147,22 @@ const materials: Record<string, Material> = {
     options: ['The scheduler rejects the Pod because demand is above its request', 'The container is CPU-throttled near its limit while continuing to run', 'The container is OOM-killed because CPU demand exceeded the request'],
     answer: 1,
     explanation: 'Requests guide placement and do not cap CPU usage. CPU limits are enforced by throttling; memory limit violations have different behavior and can cause an OOM kill.',
+  },
+  probes: {
+    title: 'Startup, readiness, and liveness probes',
+    objective: 'Choose the probe that matches initialization, traffic eligibility, or process recovery—and tune it against real startup behavior.',
+    concepts: [
+      { term: 'Startup probe', detail: 'Runs while the container starts and protects slow initialization. Until it succeeds, kubelet does not start regular liveness or readiness checks for that container.' },
+      { term: 'Readiness probe', detail: 'Determines whether the Pod should receive Service traffic. Failure makes the Pod NotReady and removes it from regular endpoints, but does not automatically restart the container.' },
+      { term: 'Liveness probe', detail: 'Detects when the container process is unhealthy and cannot recover. Consecutive failures restart the container according to the Pod restart policy.' },
+      { term: 'Probe mechanisms and tuning', detail: 'Probes can use HTTP, TCP, or an exec command. initialDelaySeconds, periodSeconds, timeoutSeconds, successThreshold, and failureThreshold control timing and repeated failure behavior.' },
+    ],
+    exampleLabel: 'CONFIGURE ALL THREE PROBE TYPES',
+    example: 'containers:\n  - name: api\n    image: example/api:1.0\n    ports:\n      - containerPort: 8080\n    startupProbe:\n      httpGet:\n        path: /started\n        port: 8080\n      failureThreshold: 30\n      periodSeconds: 2\n    readinessProbe:\n      httpGet:\n        path: /ready\n        port: 8080\n      periodSeconds: 5\n    livenessProbe:\n      httpGet:\n        path: /healthz\n        port: 8080\n      initialDelaySeconds: 10\n      periodSeconds: 10',
+    question: 'An application is healthy but temporarily overloaded and returns HTTP 503 on its readiness endpoint. What should Kubernetes do?',
+    options: ['Restart the container immediately', 'Mark the Pod NotReady and stop sending regular Service traffic', 'Replace the Node because the readiness endpoint failed'],
+    answer: 1,
+    explanation: 'Readiness failure controls endpoint eligibility. It does not itself restart the container; liveness handles repeated container health failures, and startup gates initialization.',
   },
 }
 
