@@ -70,6 +70,15 @@ export default function ClusterArchitecture({ onComplete }: { onComplete: () => 
   }
 
   const isActive = (name: string) => current.route.includes(name)
+  const workloadState = phase === 0 || phase === 1
+    ? 'NOT CREATED'
+    : phase === 2
+      ? 'REPLICASET CREATING'
+      : phase === 3
+        ? 'POD SCHEDULING'
+        : phase === 4
+          ? 'CONTAINER STARTING'
+          : 'READY'
 
   return <main className="architecture-page">
     <header className="architecture-header">
@@ -86,7 +95,8 @@ export default function ClusterArchitecture({ onComplete }: { onComplete: () => 
 
       <section className="architecture-board" aria-label="Interactive Kubernetes architecture diagram">
         <div className="board-topline"><span><Activity size={15}/> LIVE ARCHITECTURE MAP</span><span>CONTROL PLANE <ArrowRight size={13}/> NODE AGENTS <ArrowRight size={13}/> WORKLOAD</span></div>
-        <div className="architecture-map">
+        <div className={`architecture-map map-phase-${phase}`}>
+          <span className="architecture-map-packet" key={`map-packet-${phase}`} aria-hidden="true"/>
           <section className="plane control-plane">
             <div className="plane-heading"><div><Cloud size={17}/><b>CONTROL PLANE</b></div><small>CLUSTER BRAIN · RECONCILES DESIRED STATE</small></div>
             <div className="control-components">
@@ -111,22 +121,18 @@ export default function ClusterArchitecture({ onComplete }: { onComplete: () => 
                   <ComponentButton name="CRI runtime" icon={<Container/>} selected={selected} active={isActive('CRI runtime')} onSelect={setSelected}/>
                   <ComponentButton name="CNI networking" icon={<Network/>} selected={selected} active={isActive('CNI networking')} onSelect={setSelected}/>
                 </div>
-                <button className={`workload-pod ${isActive('Pod') || isActive('ready Pod') ? 'component-active' : ''}`} onClick={() => setSelected('Pod')}><Boxes size={17}/><span><b>Pod · app container</b><small>Assigned workload</small></span><span className="pod-health">READY</span></button>
+                <button className={`workload-pod workload-${workloadState.toLowerCase().replaceAll(' ', '-')} ${isActive('Pod') || isActive('ready Pod') ? 'component-active' : ''}`} onClick={() => setSelected('Pod')} aria-label={`Pod lifecycle state: ${workloadState}`}><Boxes size={17}/><span><b>{phase >= 2 ? `Pod · app-${node + 1}` : 'Pod · not created'}</b><small>{workloadState === 'NOT CREATED' ? 'Waiting for workload object' : phase === 2 ? 'ReplicaSet reconcile' : phase === 3 ? 'Scheduler binding' : phase === 4 ? 'Runtime and CNI setup' : 'Probe passed'}</small></span><span className="pod-health">{workloadState}</span></button>
               </section>)}
             </div>
           </section>
         </div>
 
-        <div className="communication-section">
-          <div className="communication-heading"><div><Network size={16}/><b>COMMUNICATION TRACE</b></div><span>STEP {String(phase + 1).padStart(2, '0')} / {String(phases.length).padStart(2, '0')}</span></div>
-          <div className="active-route" key={`route-${phase}`}>
-            <div className={`route-track ${phase === 6 ? 'data-route' : phase === 1 || phase === 5 ? 'state-route' : 'control-route'}`}>
-              <div className="route-steps">{current.route.map((item, index) => <div className={`route-endpoint ${isActive(item) ? 'route-endpoint-active' : ''}`} key={`${phase}-${item}`}>
-                <span>{item === 'kubectl' ? <Code2 size={15}/> : item === 'etcd' ? <Database size={15}/> : item === 'client' ? <Network size={15}/> : item === 'ready Pod' ? <Boxes size={15}/> : <Server size={15}/>}</span>
-                <b>{item}</b>{index < current.route.length - 1 && <ArrowRight className="route-arrow" size={17}/>}</div>)}</div>
-              <span className="moving-packet" key={`packet-${phase}`} aria-hidden="true"/>
-            </div>
-            <div className="route-explanation"><div className="route-step-number">{String(phase + 1).padStart(2, '0')}</div><div><h2>{current.title}</h2><p>{current.description}</p></div></div>
+        <div className="communication-section" aria-live="polite">
+          <div className="communication-heading"><div><Network size={16}/><b>{phase === 6 ? 'APPLICATION TRAFFIC' : 'WORKLOAD CREATION'}</b></div><span>STEP {String(phase + 1).padStart(2, '0')} / {String(phases.length).padStart(2, '0')}</span></div>
+          <div className={`architecture-phase-detail ${phase === 6 ? 'phase-data' : 'phase-control'}`} key={`detail-${phase}`}>
+            <span className="route-step-number">{String(phase + 1).padStart(2, '0')}</span>
+            <div><h2>{current.title}</h2><p>{current.description}</p></div>
+            <b className="map-lifecycle-state">{workloadState}</b>
           </div>
         </div>
 
