@@ -14,10 +14,11 @@ export default function DeploymentLesson({onSelect}:{onSelect:(name:string)=>voi
   const [pods,setPods]=useState(3)
   const [recovering,setRecovering]=useState(false)
   const [podDeleted,setPodDeleted]=useState(false)
+  const [replacementCount,setReplacementCount]=useState(0)
   const [reconcileStep,setReconcileStep]=useState(0)
   const [traceToken,setTraceToken]=useState(0)
   useEffect(()=>{if(!recovering)return;setReconcileStep(0);const interval=window.setInterval(()=>setReconcileStep(value=>Math.min(value+1,reconcilePhases.length-1)),350);const timeout=window.setTimeout(()=>{setPods(desired);setRecovering(false);setReconcileStep(reconcilePhases.length-1)},1400);return()=>{window.clearInterval(interval);window.clearTimeout(timeout)}},[recovering,desired])
-  function simulateDelete(){if(recovering||pods===0)return;setPodDeleted(true);setPods(v=>Math.max(0,v-1));setRecovering(true);setTraceToken(value=>value+1)}
+  function simulateDelete(){if(recovering||pods===0)return;setPodDeleted(true);setReplacementCount(value=>value+1);setPods(v=>Math.max(0,v-1));setRecovering(true);setTraceToken(value=>value+1)}
   function changeDesired(n:number){setDesired(n);setPodDeleted(false);setRecovering(true);setTraceToken(value=>value+1)}
   return <div className="deploy-scene">
     <div className="deploy-toolbar"><span><Workflow size={15}/> DEPLOYMENT CONTROLLER</span><span className={recovering?'reconciling':'synced'}><i/> {recovering?'RECONCILING':'DESIRED STATE SYNCED'}</span></div>
@@ -25,8 +26,8 @@ export default function DeploymentLesson({onSelect}:{onSelect:(name:string)=>voi
     <div className="reconcile-loop">{reconcilePhases.map((phase,index)=><span className="reconcile-phase-wrap" key={phase.name}><button className={`reconcile-phase ${reconcileStep===index?'reconcile-phase-active':''} ${index<reconcileStep?'reconcile-phase-done':''}`} onClick={()=>{setReconcileStep(index);onSelect(`Reconcile loop: ${phase.name.toLowerCase()}`)}} aria-current={reconcileStep===index?'step':undefined}>{phase.name}</button>{index<reconcilePhases.length-1&&<Activity size={15}/>}</span>)}</div>
     <p className="reconcile-detail" aria-live="polite">{recovering?'RECONCILING · ':''}{reconcilePhases[reconcileStep].detail}</p>
     <SignalTrace title="RECONCILIATION SIGNAL" steps={['Deployment spec', 'ReplicaSet controller', 'replacement Pod']} playToken={traceToken} onSelect={step=>onSelect(step)}/>
-    <div className="deploy-pods">{Array.from({length:desired},(_,i)=><motion.button key={i} layout className={`deploy-pod ${i>=pods?'pod-pending':''}`} onClick={()=>onSelect(`Replica Pod ${i+1}`)}><Cuboid size={18}/><b>web-{i+1}</b><small>{i<pods?'READY':recovering?'CREATING':'PENDING'}</small></motion.button>)}</div>
-    <div className="deploy-actions"><button onClick={simulateDelete} disabled={recovering||pods===0}>Delete a Pod · observe recovery</button><button className="deploy-reset" onClick={()=>{setPods(desired);setRecovering(false);setPodDeleted(false)}}><RotateCcw size={14}/> Reset</button></div>
+    <div className="deploy-pods">{Array.from({length:desired},(_,i)=>{const isReplacement=podDeleted&&i===pods-1;const podName=isReplacement?`web-replacement-${replacementCount}`:`web-${i+1}`;return <motion.button key={podName} layout className={`deploy-pod ${i>=pods?'pod-pending':''} ${isReplacement?'pod-replacement':''}`} onClick={()=>onSelect(`Replica Pod ${podName}`)}><Cuboid size={18}/><b>{podName}</b><small>{i<pods?'READY':recovering?'CREATING':'PENDING'}</small></motion.button>})}</div>
+    <div className="deploy-actions"><button onClick={simulateDelete} disabled={recovering||pods===0}>Delete a Pod · observe recovery</button><button className="deploy-reset" onClick={()=>{setPods(desired);setRecovering(false);setPodDeleted(false);setReplacementCount(0)}}><RotateCcw size={14}/> Reset</button></div>
     <p className="deploy-note">A Deployment owns a ReplicaSet; the ReplicaSet creates replacement Pods. It does not repair the deleted Pod in place.</p>
     <LessonCoach task="Delete one Pod and wait for the Deployment to restore the desired replica count." hint="The controller notices that observed replicas are below spec.replicas and creates a replacement Pod through its ReplicaSet." complete={podDeleted&&!recovering&&pods===desired} success={`The ReplicaSet created a replacement. The Deployment is back at ${desired} Ready replicas.`}/>
   </div>

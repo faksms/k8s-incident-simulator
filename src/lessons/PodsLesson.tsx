@@ -43,7 +43,7 @@ export default function PodsLesson({onSelect}:{onSelect:(name:string)=>void}) {
           <button className={`pod-container app-container ${!appRunning?'pod-waiting':''}`} onClick={()=>onSelect('Application container')}><Container/><b>web-app</b><small>port 8080</small><i>{appRunning?'RUNNING':'WAITING'}</i></button>
           <AnimatePresence>
             {extras.init&&<motion.button className={`pod-container init-container ${step===1?'pod-init-active':''}`} initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} onClick={()=>onSelect('Init container')}><PackageCheck/><b>migrate-db</b><small>ordinary init</small><i>{step===0?'WAITING':step===1?'RUNNING':'COMPLETED'}</i></motion.button>}
-            {extras.sidecar&&<motion.button className="pod-container sidecar-container" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} onClick={()=>onSelect('Sidecar container')}><Network/><b>log-agent</b><small>app container helper</small><i>{appRunning?'RUNNING':'WAITING'}</i></motion.button>}
+            {extras.sidecar&&<motion.button className="pod-container sidecar-container" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} onClick={()=>onSelect('Sidecar container')}><Network/><b>log-agent</b><small>restartable sidecar</small><i>{appRunning?'RUNNING':'WAITING'}</i></motion.button>}
             {extras.ambassador&&<motion.button className="pod-container ambassador-container" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} onClick={()=>onSelect('Ambassador container')}><Route/><b>api-proxy</b><small>egress proxy</small><i>{appRunning?'RUNNING':'WAITING'}</i></motion.button>}
           </AnimatePresence>
         </div>
