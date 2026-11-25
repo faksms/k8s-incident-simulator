@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
+import type { CSSProperties } from 'react'
 import { motion, useReducedMotion } from 'framer-motion'
-import { Activity, HeartPulse, Pause, Play, RefreshCw, RotateCcw, Rocket, Server, ShieldCheck, Waypoints } from 'lucide-react'
+import { Activity, ChevronLeft, ChevronRight, HeartPulse, Pause, Play, RefreshCw, RotateCcw, Rocket, Server, ShieldCheck, Waypoints } from 'lucide-react'
 import LessonCoach from './LessonCoach'
 import './ProbesLesson.css'
 import './ModuleDiagramPolish.css'
@@ -26,17 +27,22 @@ export default function ProbesLesson({ onSelect }: { onSelect: (name: string) =>
   const [readinessFailure, setReadinessFailure] = useState(false)
   const [livenessFailure, setLivenessFailure] = useState(false)
   const [restartCount, setRestartCount] = useState(0)
+  const [countdown, setCountdown] = useState(100)
   const [tested, setTested] = useState<Set<string>>(() => new Set())
   const reducedMotion = useReducedMotion()
 
   useEffect(() => {
     if (!playing || reducedMotion) return
+    setCountdown(100)
+    const interval = window.setInterval(() => {
+      setCountdown(value => Math.max(0, value - 4))
+    }, 120)
     const timer = window.setTimeout(() => {
       setStage(current => {
         if (current === 1 && startupFailure) return 1
         if (current === 3 && readinessFailure) return 3
         if (current === 7 && livenessFailure) return 8
-        if (current === 8) return 9
+        if (current === 7) return 10
         if (current === 9) {
           setRestartCount(value => value + 1)
           return 10
@@ -44,12 +50,17 @@ export default function ProbesLesson({ onSelect }: { onSelect: (name: string) =>
         if (current === 10) return 0
         return current + 1
       })
-    }, stage === 8 || stage === 9 ? 1500 : 1050)
-    return () => window.clearTimeout(timer)
+      setCountdown(100)
+    }, 3000)
+    return () => {
+      window.clearInterval(interval)
+      window.clearTimeout(timer)
+    }
   }, [playing, reducedMotion, stage, startupFailure, readinessFailure, livenessFailure])
 
   function reset() {
     setStage(0)
+    setCountdown(100)
     setRestartCount(0)
     setStartupFailure(false)
     setReadinessFailure(false)
@@ -65,18 +76,37 @@ export default function ProbesLesson({ onSelect }: { onSelect: (name: string) =>
     if (type === 'liveness') setLivenessFailure(value => !value)
   }
 
+  function previousStep() {
+    setPlaying(false)
+    setCountdown(100)
+    setStage(value => Math.max(0, value - 1))
+  }
+
+  function nextStep() {
+    setPlaying(false)
+    setCountdown(100)
+    setStage(value => {
+      if (value === 9) setRestartCount(current => current + 1)
+      return value >= stages.length - 1 ? 0 : value + 1
+    })
+  }
+
   const startupBlocked = stage === 1 && startupFailure
+  const startupPassed = stage >= 2 && !startupFailure
   const readinessBlocked = readinessFailure && stage >= 3 && stage <= 6
-  const killed = stage === 8 || (stage === 9 && livenessFailure)
+  const readinessPassed = stage >= 4 && stage <= 7 && !readinessFailure && startupPassed
+  const killed = stage === 8
   const restarting = stage === 9
-  const endpointEligible = !startupBlocked && !readinessBlocked && !killed
+  const endpointEligible = startupPassed && readinessPassed && !killed && !readinessBlocked
   const current = stages[stage]
 
   return <div className="probes-scene probes-continuous">
     <div className="probe-sim-toolbar">
       <div><span className="probe-live-dot"/> POD HEALTH &amp; TRAFFIC LIFECYCLE</div>
       <div>
+        <button onClick={previousStep} aria-label="Previous step" disabled={stage === 0}><ChevronLeft size={14}/><span>Previous</span></button>
         <button onClick={() => setPlaying(value => !value)}>{playing ? <Pause size={14}/> : <Play size={14}/>} {playing ? 'Pause' : 'Play'}</button>
+        <button onClick={nextStep} aria-label="Next step"><ChevronRight size={14}/><span>Next</span></button>
         <button onClick={reset}><RotateCcw size={14}/> Reset</button>
       </div>
     </div>
@@ -84,7 +114,10 @@ export default function ProbesLesson({ onSelect }: { onSelect: (name: string) =>
     <motion.section key={stage} className={`probe-lifecycle-workbench ${startupBlocked || readinessBlocked || killed ? 'probe-lifecycle-failure' : ''}`} initial={{ opacity: .7, y: 5 }} animate={{ opacity: 1, y: 0 }}>
       <header>
         <div><small>LIVE SEQUENCE · {String(stage + 1).padStart(2, '0')} / {String(stages.length).padStart(2, '0')}</small><b>{current.title}</b></div>
-        <span className="probe-phase-status">{killed ? 'CONTAINER KILLED' : restarting ? 'RESTARTING' : startupBlocked ? 'STARTUP BLOCKED' : readinessBlocked ? 'NOT READY' : 'HEALTHY'}</span>
+        <span className="probe-phase-status" style={{ '--step-progress': `${countdown}%` } as CSSProperties}> 
+          <span className="probe-countdown"/> 
+          {killed ? 'CONTAINER KILLED' : restarting ? 'RESTARTING' : startupBlocked ? 'STARTUP BLOCKED' : readinessBlocked ? 'NOT READY' : 'HEALTHY'}
+        </span>
       </header>
 
       <div className="parallel-probe-map">
@@ -93,8 +126,8 @@ export default function ProbesLesson({ onSelect }: { onSelect: (name: string) =>
           <span className="traffic-status">{endpointEligible ? 'FORWARDING' : 'NO BACKEND'}</span>
         </button>
 
-        <div className="traffic-route" aria-hidden="true">
-          <motion.span className="clusterip-packet" animate={{ x: endpointEligible ? [0, 72, 0] : 0, opacity: endpointEligible ? [0.3, 1, 0.3] : .18 }} transition={{ duration: 1.4, repeat: endpointEligible ? Infinity : 0, ease: 'easeInOut' }}/>
+        <div className={`traffic-route ${!endpointEligible?'traffic-route-blocked':''}`} aria-hidden="true">
+          <motion.span className="clusterip-packet" animate={{ x: endpointEligible ? [0, 72, 0] : 0, opacity: endpointEligible ? [0.3, 1, 0.3] : readinessBlocked ? [1,.45,1] : .18 }} transition={{ duration: endpointEligible ? 1.4 : .8, repeat: !killed && !restarting ? Infinity : 0, ease: 'easeInOut' }}/>
           <span className="route-line"/>
         </div>
 
@@ -111,16 +144,16 @@ export default function ProbesLesson({ onSelect }: { onSelect: (name: string) =>
             </div>
 
             <div className="probe-rail">
-              <motion.div className={`parallel-probe startup-probe ${stage === 1 || stage === 2 ? 'probe-active' : ''} ${startupBlocked ? 'probe-failed' : ''}`} onClick={() => onSelect('Startup probe')} animate={startupBlocked ? { scale: [1, .98, 1] } : { scale: 1 }} transition={{ duration: .8, repeat: startupBlocked ? Infinity : 0 }}>
-                <span className="probe-icon"><Rocket size={14}/></span><div><b>Startup probe</b><small>/started</small></div><span className="probe-result">{startupBlocked ? 'FAIL' : stage < 1 ? 'WAIT' : stage === 1 ? 'CHECK' : 'PASS'}</span>
+              <motion.div className={`parallel-probe startup-probe ${stage === 1 ? 'probe-active' : ''} ${startupBlocked ? 'probe-failed' : ''} ${startupPassed ? 'probe-passed' : ''}`} onClick={() => onSelect('Startup probe')} animate={startupBlocked ? { scale: [1, .98, 1] } : { scale: 1 }} transition={{ duration: .8, repeat: startupBlocked ? Infinity : 0 }}>
+                <span className="probe-icon"><Rocket size={14}/></span><div><b>Startup probe</b><small>/started</small></div><span className="probe-result">{startupBlocked ? 'FAIL' : startupPassed ? 'PASS' : stage === 1 ? 'CHECK' : 'WAIT'}</span>
               </motion.div>
 
-              <motion.div className={`parallel-probe readiness-probe ${stage === 3 || stage === 4 ? 'probe-active' : ''} ${readinessBlocked ? 'probe-failed' : ''}`} onClick={() => onSelect('Readiness probe')} animate={readinessBlocked ? { scale: [1, .98, 1] } : { scale: 1 }} transition={{ duration: .8, repeat: readinessBlocked ? Infinity : 0 }}>
-                <span className="probe-icon"><HeartPulse size={14}/></span><div><b>Readiness probe</b><small>/ready</small></div><span className="probe-result">{readinessBlocked ? 'NOT READY' : stage < 3 ? 'GATED' : stage === 3 ? 'CHECK' : 'READY'}</span>
+              <motion.div className={`parallel-probe readiness-probe ${stage === 3 ? 'probe-active' : ''} ${readinessBlocked ? 'probe-failed' : ''} ${readinessPassed ? 'probe-passed' : ''}`} onClick={() => onSelect('Readiness probe')} animate={readinessBlocked ? { scale: [1, .98, 1] } : { scale: 1 }} transition={{ duration: .8, repeat: readinessBlocked ? Infinity : 0 }}>
+                <span className="probe-icon"><HeartPulse size={14}/></span><div><b>Readiness probe</b><small>/ready</small></div><span className="probe-result">{readinessBlocked ? 'NOT READY' : readinessPassed ? 'READY' : stage === 3 ? 'CHECK' : 'GATED'}</span>
               </motion.div>
 
-              <motion.div className={`parallel-probe liveness-probe ${stage >= 6 && stage <= 8 ? 'probe-active' : ''} ${stage === 7 && livenessFailure ? 'probe-failed' : ''}`} onClick={() => onSelect('Liveness probe')} animate={stage === 7 && livenessFailure ? { scale: [1, .98, 1] } : { scale: 1 }} transition={{ duration: .8, repeat: stage === 7 && livenessFailure ? Infinity : 0 }}>
-                <span className="probe-icon"><RefreshCw size={14}/></span><div><b>Liveness probe</b><small>/healthz</small></div><span className="probe-result">{stage === 7 && livenessFailure ? 'KILL' : stage < 6 ? 'GATED' : 'HEALTHY'}</span>
+              <motion.div className={`parallel-probe liveness-probe ${stage === 6 || stage === 7 ? 'probe-active' : ''} ${stage === 7 && livenessFailure ? 'probe-failed' : ''}`} onClick={() => onSelect('Liveness probe')} animate={stage === 7 && livenessFailure ? { scale: [1, .98, 1] } : { scale: 1 }} transition={{ duration: .8, repeat: stage === 7 && livenessFailure ? Infinity : 0 }}>
+                <span className="probe-icon"><RefreshCw size={14}/></span><div><b>Liveness probe</b><small>/healthz</small></div><span className="probe-result">{stage === 7 && livenessFailure ? 'KILL' : stage >= 6 ? 'HEALTHY' : 'GATED'}</span>
               </motion.div>
             </div>
           </div>
@@ -143,6 +176,26 @@ export default function ProbesLesson({ onSelect }: { onSelect: (name: string) =>
       <button className={startupFailure ? 'failure-active' : ''} onClick={() => toggleFailure('startup')}><Rocket size={14}/> Startup failure</button>
       <button className={readinessFailure ? 'failure-active' : ''} onClick={() => toggleFailure('readiness')}><HeartPulse size={14}/> Readiness failure</button>
       <button className={livenessFailure ? 'failure-active' : ''} onClick={() => toggleFailure('liveness')}><RefreshCw size={14}/> Liveness / kill</button>
+    </div>
+
+    <div className="probe-sequence-controls">
+      <div className="probe-sequence-countdown" style={{ opacity: countdown < 100 ? 1 : undefined }}>
+        <div className="countdown-ring" style={{ background: `conic-gradient(var(--cui-accent) ${countdown}%, var(--cui-panel) 0)` }}>
+          <div className="countdown-center" style={{ fontSize: countdown < 100 ? 12 : undefined }}>{countdown < 100 ? Math.round(countdown / 10) : undefined}</div>
+        </div>
+      </div>
+
+      <div className="probe-sequence-steps">
+        <button className="probe-sequence-control" onClick={previousStep} disabled={stage === 0}>
+          <ChevronLeft size={16}/>
+          <div>Previous</div>
+        </button>
+
+        <button className="probe-sequence-control" onClick={nextStep} disabled={stage >= stages.length - 1}>
+          <div>Next</div>
+          <ChevronRight size={16}/>
+        </button>
+      </div>
     </div>
 
     <LessonCoach task="Watch the boot lifecycle, then trigger startup, readiness, or liveness failures and see which traffic branch changes." hint="Startup gates the other probes. Readiness removes the endpoint. Liveness kills and restarts the container while preserving the Pod IP." complete={tested.size === 3} success="You compared startup gating, traffic readiness, and container recovery."/>
