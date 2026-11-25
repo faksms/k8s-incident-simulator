@@ -166,7 +166,7 @@ const materials: Record<string, Material> = {
   },
 }
 
-export default function LearningMaterials({ lessonId, onPass }: { lessonId: string; onPass: () => void }) {
+export default function LearningMaterials({ lessonId, passed, onPass }: { lessonId: string; passed: boolean; onPass: () => void }) {
   const material = materials[lessonId]
   const [selected, setSelected] = useState<number | null>(null)
   const [copied, setCopied] = useState(false)
@@ -192,6 +192,6 @@ export default function LearningMaterials({ lessonId, onPass }: { lessonId: stri
     <header className="materials-heading"><div><p>FIELD NOTES · {lessonId.toUpperCase()}</p><h2 id="materials-title">{material.title}</h2><span>{material.objective}</span></div><BookOpen size={22}/></header>
     <div className="materials-concepts">{material.concepts.map(item => <article key={item.term}><h3>{item.term}</h3><p>{item.detail}</p></article>)}</div>
     <section className="materials-example"><header><div><Terminal size={15}/><b>{material.exampleLabel}</b></div><button onClick={copyExample} aria-label="Copy example"><Clipboard size={14}/>{copied ? 'Copied' : 'Copy'}</button></header><pre><code>{material.example}</code></pre>{copyError&&<p className="copy-error">Clipboard permission was unavailable. Select the example text to copy it manually.</p>}</section>
-    <section className="materials-check"><div className="check-heading"><span>KNOWLEDGE CHECK</span>{selected === material.answer&&<b><CircleCheck size={15}/> MASTERED</b>}</div><h3>{material.question}</h3><div className="check-options">{material.options.map((option,index)=><button key={option} className={selected===index?index===material.answer?'answer-correct':'answer-incorrect':''} onClick={()=>answer(index)} aria-pressed={selected===index}><span>{String.fromCharCode(65+index)}</span>{option}</button>)}</div>{selected!==null&&<p aria-live="polite" className={selected===material.answer?'answer-feedback correct':'answer-feedback'}>{selected===material.answer?<Check size={16}/>:<CircleCheck size={16}/>}<span>{selected===material.answer?'That’s right. ':'Not quite. '}{material.explanation}</span></p>}</section>
+    <section className="materials-check"><div className="check-heading"><span>KNOWLEDGE CHECK</span>{passed&&<b><CircleCheck size={15}/> CHECK PASSED</b>}</div><h3>{material.question}</h3><div className="check-options">{material.options.map((option,index)=><button key={option} className={selected===index?index===material.answer?'answer-correct':'answer-incorrect':''} onClick={()=>answer(index)} aria-pressed={selected===index}><span>{String.fromCharCode(65+index)}</span>{option}</button>)}</div>{selected!==null&&<p aria-live="polite" className={selected===material.answer?'answer-feedback correct':'answer-feedback'}>{selected===material.answer?<Check size={16}/>:<CircleCheck size={16}/>}<span>{selected===material.answer?`That’s right. ${material.explanation}`:'Not quite. Review the notes above and try another answer.'}</span></p>}</section>
   </section>
 }

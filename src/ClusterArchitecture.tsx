@@ -63,11 +63,10 @@ const componentInfo: Record<string, string> = {
   'Client': 'An application client sends traffic to a Service virtual IP; the Service data plane forwards it to a ready endpoint.',
 }
 
-export default function ClusterArchitecture({ onComplete }: { onComplete: () => void }) {
+export default function ClusterArchitecture({ onComplete, passed, onPass }: { onComplete: () => void; passed: boolean; onPass: () => void }) {
   const [phase, setPhase] = useState(0)
-  const [playing, setPlaying] = useState(true)
+  const [playing, setPlaying] = useState(false)
   const [selected, setSelected] = useState('')
-  const [knowledgePassed, setKnowledgePassed] = useState(false)
   const [legIndex, setLegIndex] = useState(0)
   const mapRef = useRef<HTMLDivElement>(null)
   const [flowGeometry, setFlowGeometry] = useState<{ width:number; height:number; path:string; color:string }>({ width:0, height:0, path:'', color:'#34d399' })
@@ -210,8 +209,13 @@ export default function ClusterArchitecture({ onComplete }: { onComplete: () => 
 
     <div className="architecture-shell">
       <section className="architecture-intro">
-        <div><p className="architecture-kicker">FIELD GUIDE · 01 / CONTROL PLANE TO POD</p><h1>One cluster. Two planes.<br/><em>Every hop, explained.</em></h1><p className="architecture-lede">Trace how a workload becomes a running Pod—and how application traffic takes a separate path through the cluster.</p></div>
+        <div><p className="architecture-kicker">START HERE · 01 / CLUSTER ARCHITECTURE</p><h1>Learn Kubernetes<br/><em>one step at a time.</em></h1><p className="architecture-lede">Kubernetes helps run and manage containerized applications across computers. Start with the map below, then explore Pods, networking, and hands-on incidents. No cluster setup is needed.</p></div>
         <div className="architecture-legend"><span><i className="legend-control"/> CONTROL PLANE</span><span><i className="legend-data"/> DATA PLANE</span><span><i className="legend-state"/> STATE / STATUS</span></div>
+      </section>
+
+      <section className="beginner-guide" aria-label="Getting started">
+        <div><b>First, the basics</b><p>A <strong>container</strong> packages an application. A <strong>Pod</strong> is the unit Kubernetes runs; a <strong>node</strong> is a computer that runs Pods. A <strong>cluster</strong> is the group of computers managed together.</p></div>
+        <div><b>How to learn here</b><p>Choose a step or press Play, select components to learn what they do, and try the practice task and knowledge check below. Continue whenever you are ready.</p></div>
       </section>
 
       <section className="architecture-board" aria-label="Interactive Kubernetes architecture diagram">
@@ -288,8 +292,8 @@ export default function ClusterArchitecture({ onComplete }: { onComplete: () => 
         <div className="component-inspector"><CircleHelp size={17}/><span>{selected ? <><b>{selected}</b>{componentInfo[selected] ?? 'A component in the Kubernetes control and workload path.'}</> : 'Click any component in the map to inspect its role and communication boundaries.'}</span></div>
         <div className="architecture-principle"><ShieldCheck size={16}/><span><b>Important boundary</b> Control traffic goes through the API server. Service packets are data-plane traffic; they do not pass through etcd.</span></div>
       </div>
-      <LearningMaterials lessonId="architecture" onPass={() => setKnowledgePassed(true)}/>
-      <footer className="architecture-footer"><span>INTERACTIVE SYSTEMS EXPLAINED · KUBERNETES ARCHITECTURE</span><button aria-label={knowledgePassed?'Continue to foundations; knowledge check passed':'Continue to interactive foundations'} onClick={onComplete}>Continue to interactive foundations <ChevronRight size={16}/></button></footer>
+      <LearningMaterials lessonId="architecture" passed={passed} onPass={onPass}/>
+      <footer className="architecture-footer"><span>INTERACTIVE SYSTEMS EXPLAINED · KUBERNETES ARCHITECTURE</span><button onClick={onComplete}>Continue to interactive foundations <ChevronRight size={16}/></button></footer>
     </div>
   </main>
 }

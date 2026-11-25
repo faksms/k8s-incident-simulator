@@ -58,27 +58,30 @@ function describeSelection(name:string) {
   return 'Inspect the simulation state and compare it with the field notes below to understand this component’s role.'
 }
 
-export default function KubernetesCourse({onComplete,onSkip}:{onComplete:()=>void;onSkip:()=>void}) {
-  const [index,setIndex] = useState(0)
+export default function KubernetesCourse({index,onIndexChange,passedLessons,onPass,onArchitecture,onComplete,onSkip}:{index:number;onIndexChange:(index:number)=>void;passedLessons:Set<string>;onPass:(id:string)=>void;onArchitecture:()=>void;onComplete:()=>void;onSkip:()=>void}) {
   const [selected,setSelected] = useState('')
-  const [passedLessons,setPassedLessons] = useState<Set<string>>(() => new Set())
   const lesson = lessons[index]
   const Scene = lesson.Component
-  function move(next:number) { setSelected(''); if(next >= lessons.length) { onComplete(); return } setIndex(Math.max(0,next)) }
-  function markPassed() { setPassedLessons(current => new Set(current).add(lesson.id)) }
+  function move(next:number) {
+    setSelected('')
+    if(next < 0) { onArchitecture(); return }
+    if(next >= lessons.length) { onComplete(); return }
+    onIndexChange(next)
+    window.scrollTo(0, 0)
+  }
 
   return <main className="course-page">
-    <header className="course-header"><div className="course-brand"><span className="course-logo"><Sparkles size={19}/></span><span><b>Kubernetes, visually</b><small>INTERACTIVE FOUNDATIONS · FIELD NOTES</small></span></div><div className="course-progress-label">MASTERED <b>{passedLessons.size} / {lessons.length}</b></div><button className="course-skip" onClick={onSkip}>Skip to incident exercises <ArrowRight size={15}/></button></header>
+    <header className="course-header"><div className="course-brand"><span className="course-logo"><Sparkles size={19}/></span><span><b>Kubernetes, visually</b><small>INTERACTIVE FOUNDATIONS · FIELD NOTES</small></span></div><div className="course-progress-label">CHECKS PASSED <b>{lessons.filter(item=>passedLessons.has(item.id)).length} / {lessons.length}</b></div><button className="course-skip" onClick={onSkip}>Incident exercises <ArrowRight size={15}/></button></header>
     <div className="course-shell">
-      <nav className="course-steps" aria-label="Kubernetes learning topics"><button className="course-step done" onClick={onSkip}><span><CheckCircle2 size={15}/></span><b>Cluster architecture</b></button>{lessons.map((item,i)=><button key={item.id} className={`course-step ${index===i?'active':''} ${passedLessons.has(item.id)?'done':''}`} onClick={()=>move(i)} aria-current={index===i?'step':undefined}><span>{passedLessons.has(item.id)?<CheckCircle2 size={15}/>:String(i+2).padStart(2,'0')}</span><b>{item.title}</b></button>)}</nav>
+      <nav className="course-steps" aria-label="Kubernetes learning topics"><button className={`course-step ${passedLessons.has('architecture')?'done':''}`} onClick={onArchitecture}><span>{passedLessons.has('architecture')?<CheckCircle2 size={15}/>: '01'}</span><b>Cluster architecture</b></button>{lessons.map((item,i)=><button key={item.id} className={`course-step ${index===i?'active':''} ${passedLessons.has(item.id)?'done':''}`} onClick={()=>move(i)} aria-current={index===i?'step':undefined}><span>{passedLessons.has(item.id)?<CheckCircle2 size={15}/>:String(i+2).padStart(2,'0')}</span><b>{item.title}</b></button>)}</nav>
       <section className="lesson-area">
         <div className="lesson-copy"><p className="course-kicker"><Sparkles size={14}/>{lesson.subtitle}</p><h1>{lesson.title}</h1><p className="lesson-description">{lesson.body}</p><div className="learning-takeaway"><BookOpen size={18}/><span><b>OPERATING PRINCIPLE</b>{lesson.takeaway}</span></div><div className="lesson-instruction"><CircleHelp size={17}/>Interact with the simulation; inspect components and watch cluster behavior change.</div>{selected&&<div className="component-explanation"><b>{selected}</b><p>{describeSelection(selected)}</p></div>}</div>
         <div className="visual-card topic-visual"><div className="visual-top"><span><Sparkles size={15}/> SYSTEMS / EXPLAINED</span><span className="demo-badge">K8S · {String(index+2).padStart(2,'0')}</span></div><AnimatePresence mode="wait"><motion.div key={lesson.id} className={`lesson-visual topic-lesson-visual topic-lesson-${lesson.id}`} initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} exit={{opacity:0,y:-8}} transition={{duration:.2}}><Scene onSelect={setSelected}/></motion.div></AnimatePresence><div className="visual-footer"><span><span className="legend-dot"/> SIMULATED CLUSTER</span><span>NO REAL INFRASTRUCTURE</span></div></div>
       </section>
-      <LearningMaterials key={lesson.id} lessonId={lesson.id} onPass={markPassed}/>
+      <LearningMaterials key={lesson.id} lessonId={lesson.id} passed={passedLessons.has(lesson.id)} onPass={()=>onPass(lesson.id)}/>
       <footer className="course-footer"><button className="course-back" onClick={()=>move(index-1)}><ChevronLeft size={17}/> Previous topic</button><span>TOPIC {String(index+2).padStart(2,'0')} / {String(lessons.length+1).padStart(2,'0')}</span><button className="course-next" onClick={()=>move(index+1)}>{index===lessons.length-1?'Start incident exercises':'Next topic'} <ChevronRight size={17}/></button></footer>
       <p className="course-safety"><ShieldCheck size={14}/> Interactive training simulation · no connection to a real cluster.</p>
-      <p className="course-accessibility"><CircleHelp size={13}/> Each topic is an independent module; use the topic navigation to revisit concepts.</p>
+      <p className="course-accessibility"><CircleHelp size={13}/> Explore the simulation, read the notes, then try the knowledge check. Your passed checks are kept while this page stays open.</p>
     </div>
   </main>
 }

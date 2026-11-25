@@ -1,6 +1,6 @@
 # SRE Night Shift
 
-A cyberpunk browser-based Kubernetes incident-response simulator built with React, TypeScript, Vite, Tailwind CSS, and Framer Motion.
+A browser-based interactive Kubernetes learning path and incident-response simulator built with React, TypeScript, Vite, Tailwind CSS, and Framer Motion.
 
 ## Run locally
 
@@ -11,9 +11,11 @@ npm run dev
 
 Open `http://localhost:5173`. Build and preview with `npm run build` and `npm run preview`.
 
-## Play
+## Learn and practice
 
-Pick a difficulty, investigate the alert using cluster topology, logs, metrics, and events, diagnose its root cause, and apply the displayed remediation in the simulated `kubectl` terminal. Keep availability at or above 95% and resolve incidents in under ten minutes. All cluster commands are simulated; no real cluster or credentials are used.
+Start with the architecture map, then explore the foundation topics using their simulations, notes, and knowledge checks. Select a topic to revisit it or continue to guided or independent incident practice. Passed checks are retained while the page remains open, but are reset on reload. From the incident welcome screen, you can return to the lessons.
+
+In incident practice, investigate simulated evidence, diagnose the cause, and choose a recovery action. All cluster commands are simulated; no real cluster or credentials are used.
 
 Includes 13 scenarios: OOMKilled, ImagePullBackOff, DNS failure, node memory and disk pressure, readiness/liveness probe failures, unreachable service, bad ingress, maxed HPA, expired TLS, stuck rollout, and Helm upgrade failure.
 

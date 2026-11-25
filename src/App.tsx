@@ -21,7 +21,7 @@ const scenarios: Scenario[] = [
 const stages = ['Understand', 'Investigate', 'Diagnose', 'Recover', 'Learn']
 const distractors = ['Recent application change introduced a bug', 'Insufficient node capacity', 'A downstream dependency is unavailable']
 
-export default function App() {
+export default function App({ onReturnToCourse }: { onReturnToCourse: () => void }) {
   const [started, setStarted] = useState(false)
   const [guided, setGuided] = useState(true)
   const [index, setIndex] = useState(0)
@@ -52,13 +52,13 @@ export default function App() {
   }
   function recover() { setResolved(true); setStage(4) }
   function nextScenario() {
-    if (index === scenarios.length - 1) { setStarted(false); setIndex(0); setSeconds(0); return }
+    if (index === scenarios.length - 1) { restart(); return }
     setIndex(value => value + 1); setStage(0); setSelectedCause(''); setDiagnosed(false); setResolved(false); setActiveCommand(null); setGathered([]); setRecoveryChoice(''); setRecoveryApplied(false); setSeconds(0)
   }
   function restart() { setIndex(0); setStage(0); setSelectedCause(''); setDiagnosed(false); setResolved(false); setActiveCommand(null); setGathered([]); setRecoveryChoice(''); setRecoveryApplied(false); setSeconds(0); setStarted(false) }
   const elapsed = `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`
 
-  if (!started) return <main className="welcome"><section className="welcome-card"><div className="brand-mark"><Cloud size={24}/></div><p className="eyebrow">INTERACTIVE SRE TRAINING</p><h1>Incident response,<br/><span>without the guesswork.</span></h1><p className="intro-copy">Practice a calm, repeatable production workflow: understand the impact, gather evidence, identify the cause, recover safely, and capture what you learned.</p><div className="learning-preview">{stages.map((label, i) => <div key={label}><span>{i + 1}</span><b>{label}</b></div>)}</div><div className="mode-picker"><button className={guided ? 'mode selected' : 'mode'} onClick={() => setGuided(true)}><b>Guided practice</b><small>Step-by-step prompts and explanations</small></button><button className={!guided ? 'mode selected' : 'mode'} onClick={() => setGuided(false)}><b>Independent practice</b><small>Investigate first; reveal guidance when needed</small></button></div><button className="primary-button" onClick={begin}>Start learning path <ChevronRight size={18}/></button><p className="safe-note"><ShieldCheck size={15}/> Safe simulation: commands never run against a real cluster.</p></section></main>
+  if (!started) return <main className="welcome"><section className="welcome-card"><div className="brand-mark"><Cloud size={24}/></div><p className="eyebrow">INTERACTIVE SRE TRAINING</p><h1>Incident response,<br/><span>without the guesswork.</span></h1><p className="intro-copy">Practice a calm, repeatable production workflow: understand the impact, gather evidence, identify the cause, recover safely, and capture what you learned.</p><div className="learning-preview">{stages.map((label, i) => <div key={label}><span>{i + 1}</span><b>{label}</b></div>)}</div><div className="mode-picker"><button className={guided ? 'mode selected' : 'mode'} onClick={() => setGuided(true)}><b>Guided practice</b><small>Step-by-step prompts and explanations</small></button><button className={!guided ? 'mode selected' : 'mode'} onClick={() => setGuided(false)}><b>Independent practice</b><small>Investigate first; reveal guidance when needed</small></button></div><button className="primary-button" onClick={begin}>Start incident practice <ChevronRight size={18}/></button><button className="return-course" onClick={onReturnToCourse}>Return to Kubernetes lessons</button><p className="safe-note"><ShieldCheck size={15}/> Safe simulation: commands never run against a real cluster.</p></section></main>
 
   return <main className="workspace">
     <header className="app-header"><a className="brand" href="#home" onClick={event => { event.preventDefault(); restart() }}><span className="brand-mark"><Cloud size={20}/></span><span><b>SRE Learning Lab</b><small>SIMULATED CLUSTER · NO LIVE INFRASTRUCTURE</small></span></a><div className="header-meta"><span><Activity size={15}/> Scenario {index + 1} of {scenarios.length}</span><span><Clock3 size={15}/> Practice time {elapsed}</span></div><button className="text-button" onClick={restart}><RotateCcw size={15}/> Exit</button></header>
