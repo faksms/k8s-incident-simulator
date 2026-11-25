@@ -34,7 +34,7 @@ export default function ClusterArchitecture({ onComplete }: { onComplete: () => 
   const [phase, setPhase] = useState(0)
   const [playing, setPlaying] = useState(true)
   const [selected, setSelected] = useState('')
-  const [, setKnowledgePassed] = useState(false)
+  const [knowledgePassed, setKnowledgePassed] = useState(false)
   const current = phases[phase]
 
   useEffect(() => {
