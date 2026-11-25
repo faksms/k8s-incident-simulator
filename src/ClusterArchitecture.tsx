@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import type { ReactNode } from 'react'
+import type { CSSProperties, ReactNode } from 'react'
 import { Activity, ArrowDown, ArrowRight, Boxes, CheckCircle2, ChevronLeft, ChevronRight, CircleHelp, Cloud, Code2, Container, Database, Network, Pause, Play, RotateCcw, Server, ShieldCheck, Workflow } from 'lucide-react'
 import LessonCoach from './lessons/LessonCoach'
 import StepSequenceControls from './lessons/StepSequenceControls'
@@ -14,6 +14,18 @@ const phases = [
   { title: 'Start the Pod', route: ['kubelet', 'CRI runtime', 'CNI networking', 'Pod'], description: 'The node kubelet observes its assigned Pod, asks the container runtime to start it, and configures networking.' },
   { title: 'Report health', route: ['kubelet', 'API server', 'controller manager'], description: 'Kubelet reports Pod status and probe results. Controllers observe the update and continue reconciling.' },
   { title: 'Route application traffic', route: ['client', 'Service dataplane', 'ready Pod'], description: 'Application packets use the Service data plane to reach a ready Pod. This is separate from control-plane reconciliation.' },
+]
+
+type CommunicationLeg = { from: string; to: string; label: string }
+
+const communicationFlows: CommunicationLeg[][] = [
+  [{ from: 'kubectl', to: 'API server', label: 'kubectl submits the workload manifest to the API server' }],
+  [{ from: 'API server', to: 'etcd', label: 'API server persists the accepted desired state in etcd' }],
+  [{ from: 'Controller manager', to: 'API server', label: 'Controller manager watches observed state and reconciles through the API' }],
+  [{ from: 'Scheduler', to: 'API server', label: 'Scheduler evaluates the Pod and records its node binding through the API' }, { from: 'API server', to: 'kubelet', label: 'Kubelet receives the assigned-Pod watch update from the API' }],
+  [{ from: 'kubelet', to: 'CRI runtime', label: 'Kubelet asks the CRI runtime to start the container' }, { from: 'CRI runtime', to: 'CNI networking', label: 'Runtime delegates Pod network setup to CNI' }, { from: 'CNI networking', to: 'Pod', label: 'CNI assigns the sandbox address and connects the Pod' }],
+  [{ from: 'kubelet', to: 'API server', label: 'Kubelet reports Pod and probe status to the API' }, { from: 'API server', to: 'Controller manager', label: 'Controller manager observes status and continues reconciliation' }],
+  [{ from: 'Client', to: 'kube-proxy / eBPF', label: 'Client traffic reaches the Service data-plane implementation' }, { from: 'kube-proxy / eBPF', to: 'ready Pod', label: 'Data plane forwards the packet to an eligible ready Pod' }],
 ]
 
 const componentInfo: Record<string, string> = {
@@ -36,40 +48,60 @@ export default function ClusterArchitecture({ onComplete }: { onComplete: () => 
   const [playing, setPlaying] = useState(true)
   const [selected, setSelected] = useState('')
   const [knowledgePassed, setKnowledgePassed] = useState(false)
+  const [legIndex, setLegIndex] = useState(0)
   const current = phases[phase]
+  const flow = communicationFlows[phase]
+  const activeLeg = flow[legIndex] ?? flow[0]
 
   useEffect(() => {
     if (!playing) return
-    const timer = window.setInterval(() => setPhase(value => {
-      if (value >= phases.length - 1) {
-        setPlaying(false)
-        return value
+    const timer = window.setTimeout(() => {
+      if (legIndex < flow.length - 1) {
+        setLegIndex(value => value + 1)
+        return
       }
-      return value + 1
-    }), 2800)
-    return () => window.clearInterval(timer)
-  }, [playing])
+      if (phase >= phases.length - 1) {
+        setPlaying(false)
+        return
+      }
+      setPhase(value => value + 1)
+      setLegIndex(0)
+    }, 1400)
+    return () => window.clearTimeout(timer)
+  }, [playing, phase, legIndex, flow.length])
 
   function choosePhase(index: number) {
     setPhase(index)
+    setLegIndex(0)
     setPlaying(false)
   }
 
   function replay() {
     setPhase(0)
+    setLegIndex(0)
     setPlaying(true)
   }
 
   function togglePlay() {
-    if (phase === phases.length - 1 && !playing) {
+    if (phase === phases.length - 1 && legIndex === flow.length - 1 && !playing) {
       setPhase(0)
+      setLegIndex(0)
       setPlaying(true)
       return
     }
     setPlaying(value => !value)
   }
 
-  const isActive = (name: string) => current.route.includes(name)
+  const isActive = (name: string) => {
+    const normalized = name.toLowerCase()
+    const from = activeLeg.from.toLowerCase()
+    const to = activeLeg.to.toLowerCase()
+    if (normalized === 'pod') return to === 'pod' || to === 'ready pod'
+    if (normalized === 'ready pod') return to === 'ready pod'
+    return from === normalized || to === normalized
+  }
+  const isSource = (name: string) => activeLeg.from.toLowerCase() === name.toLowerCase()
+  const isDestination = (name: string) => activeLeg.to.toLowerCase() === name.toLowerCase()
   const workloadState = phase === 0 || phase === 1
     ? 'NOT CREATED'
     : phase === 2
@@ -96,15 +128,16 @@ export default function ClusterArchitecture({ onComplete }: { onComplete: () => 
       <section className="architecture-board" aria-label="Interactive Kubernetes architecture diagram">
         <div className="board-topline"><span><Activity size={15}/> LIVE ARCHITECTURE MAP</span><span>CONTROL PLANE <ArrowRight size={13}/> NODE AGENTS <ArrowRight size={13}/> WORKLOAD</span></div>
         <div className={`architecture-map map-phase-${phase}`}>
-          <span className="architecture-map-packet" key={`map-packet-${phase}`} aria-hidden="true"/>
+          <span className="architecture-map-packet" style={packetPosition(activeLeg.from, activeLeg.to)} key={`map-packet-${phase}-${legIndex}`} aria-hidden="true"/>
           <section className="plane control-plane">
             <div className="plane-heading"><div><Cloud size={17}/><b>CONTROL PLANE</b></div><small>CLUSTER BRAIN · RECONCILES DESIRED STATE</small></div>
             <div className="control-components">
-              <ComponentButton name="API server" icon={<Workflow/>} selected={selected} active={isActive('API server')} onSelect={setSelected}/>
-              <ComponentButton name="etcd" icon={<Database/>} selected={selected} active={isActive('etcd')} onSelect={setSelected}/>
-              <ComponentButton name="Scheduler" icon={<Activity/>} selected={selected} active={isActive('scheduler')} onSelect={setSelected}/>
-              <ComponentButton name="Controller manager" icon={<Workflow/>} selected={selected} active={isActive('controller manager')} onSelect={setSelected}/>
-              <ComponentButton name="Cloud controller" icon={<Cloud/>} selected={selected} active={isActive('controller manager')} onSelect={setSelected}/>
+              <ComponentButton name="kubectl" icon={<Code2/>} selected={selected} active={isActive('kubectl')} source={isSource('kubectl')} destination={isDestination('kubectl')} onSelect={setSelected}/>
+              <ComponentButton name="API server" icon={<Workflow/>} selected={selected} active={isActive('API server')} source={isSource('API server')} destination={isDestination('API server')} onSelect={setSelected}/>
+              <ComponentButton name="etcd" icon={<Database/>} selected={selected} active={isActive('etcd')} source={isSource('etcd')} destination={isDestination('etcd')} onSelect={setSelected}/>
+              <ComponentButton name="Scheduler" icon={<Activity/>} selected={selected} active={isActive('Scheduler')} source={isSource('Scheduler')} destination={isDestination('Scheduler')} onSelect={setSelected}/>
+              <ComponentButton name="Controller manager" icon={<Workflow/>} selected={selected} active={isActive('Controller manager')} source={isSource('Controller manager')} destination={isDestination('Controller manager')} onSelect={setSelected}/>
+              <ComponentButton name="Cloud controller" icon={<Cloud/>} selected={selected} active={false} onSelect={setSelected}/>
             </div>
           </section>
 
@@ -116,10 +149,11 @@ export default function ClusterArchitecture({ onComplete }: { onComplete: () => 
               {[0, 1].map(node => <section className="worker-node" key={node}>
                 <div className="worker-title"><Server size={15}/><b>NODE 0{node + 1}</b><span>HEALTHY</span></div>
                 <div className="node-components">
-                  <ComponentButton name="kubelet" icon={<Activity/>} selected={selected} active={isActive('kubelet')} onSelect={setSelected}/>
-                  <ComponentButton name="kube-proxy / eBPF" icon={<Network/>} selected={selected} active={isActive('Service dataplane')} onSelect={setSelected}/>
-                  <ComponentButton name="CRI runtime" icon={<Container/>} selected={selected} active={isActive('CRI runtime')} onSelect={setSelected}/>
-                  <ComponentButton name="CNI networking" icon={<Network/>} selected={selected} active={isActive('CNI networking')} onSelect={setSelected}/>
+                  <ComponentButton name="Client" icon={<Network/>} selected={selected} active={isActive('Client')} source={isSource('Client')} destination={isDestination('Client')} onSelect={setSelected}/>
+                  <ComponentButton name="kubelet" icon={<Activity/>} selected={selected} active={isActive('kubelet')} source={isSource('kubelet')} destination={isDestination('kubelet')} onSelect={setSelected}/>
+                  <ComponentButton name="kube-proxy / eBPF" icon={<Network/>} selected={selected} active={isActive('kube-proxy / eBPF')} source={isSource('kube-proxy / eBPF')} destination={isDestination('kube-proxy / eBPF')} onSelect={setSelected}/>
+                  <ComponentButton name="CRI runtime" icon={<Container/>} selected={selected} active={isActive('CRI runtime')} source={isSource('CRI runtime')} destination={isDestination('CRI runtime')} onSelect={setSelected}/>
+                  <ComponentButton name="CNI networking" icon={<Network/>} selected={selected} active={isActive('CNI networking')} source={isSource('CNI networking')} destination={isDestination('CNI networking')} onSelect={setSelected}/>
                 </div>
                 <button className={`workload-pod workload-${workloadState.toLowerCase().replace(/ /g, '-')} ${isActive('Pod') || isActive('ready Pod') ? 'component-active' : ''}`} onClick={() => setSelected('Pod')} aria-label={`Pod lifecycle state: ${workloadState}`}><Boxes size={17}/><span><b>{phase >= 2 ? `Pod · app-${node + 1}` : 'Pod · not created'}</b><small>{workloadState === 'NOT CREATED' ? 'Waiting for workload object' : phase === 2 ? 'ReplicaSet reconcile' : phase === 3 ? 'Scheduler binding' : phase === 4 ? 'Runtime and CNI setup' : 'Probe passed'}</small></span><span className="pod-health">{workloadState}</span></button>
               </section>)}
@@ -131,7 +165,7 @@ export default function ClusterArchitecture({ onComplete }: { onComplete: () => 
           <div className="communication-heading"><div><Network size={16}/><b>{phase === 6 ? 'APPLICATION TRAFFIC' : 'WORKLOAD CREATION'}</b></div><span>STEP {String(phase + 1).padStart(2, '0')} / {String(phases.length).padStart(2, '0')}</span></div>
           <div className={`architecture-phase-detail ${phase === 6 ? 'phase-data' : 'phase-control'}`} key={`detail-${phase}`}>
             <span className="route-step-number">{String(phase + 1).padStart(2, '0')}</span>
-            <div><h2>{current.title}</h2><p>{current.description}</p></div>
+            <div><h2>{current.title}</h2><p>{current.description}</p><small className="map-leg-label"><b>{activeLeg.from}</b><ArrowRight size={13}/> <b>{activeLeg.to}</b> · {activeLeg.label}</small></div>
             <b className="map-lifecycle-state">{workloadState}</b>
           </div>
         </div>
@@ -153,6 +187,12 @@ export default function ClusterArchitecture({ onComplete }: { onComplete: () => 
   </main>
 }
 
-function ComponentButton({ name, icon, selected, active, onSelect }: { name: string; icon: ReactNode; selected: string; active: boolean; onSelect: (name: string) => void }) {
-  return <button className={`architecture-component ${active ? 'component-active' : ''} ${selected === name ? 'component-selected' : ''}`} onClick={() => onSelect(name)} aria-pressed={selected === name}><span className="component-icon">{icon}</span><span className="component-label">{name}</span>{active && <i className="component-pulse"/>}</button>
+function packetPosition(from: string, to: string): CSSProperties {
+  const zone = (name: string) => name.toLowerCase().includes('pod') ? 88 : name.toLowerCase().includes('client') ? 70 : name.toLowerCase().includes('kubelet') || name.toLowerCase().includes('cri') || name.toLowerCase().includes('cni') || name.toLowerCase().includes('proxy') ? 78 : name.toLowerCase().includes('api') || name.toLowerCase().includes('scheduler') || name.toLowerCase().includes('controller') || name.toLowerCase().includes('etcd') || name.toLowerCase().includes('kubectl') ? 22 : 50
+  const row = (name: string) => name.toLowerCase().includes('pod') ? 75 : name.toLowerCase().includes('kubelet') || name.toLowerCase().includes('cri') || name.toLowerCase().includes('cni') || name.toLowerCase().includes('proxy') ? 58 : name.toLowerCase().includes('client') ? 68 : 34
+  return { '--packet-left': `${zone(from)}%`, '--packet-top': `${row(from)}%`, '--packet-to-left': `${zone(to)}%`, '--packet-to-top': `${row(to)}%` } as CSSProperties
+}
+
+function ComponentButton({ name, icon, selected, active, source, destination, onSelect }: { name: string; icon: ReactNode; selected: string; active: boolean; source?: boolean; destination?: boolean; onSelect: (name: string) => void }) {
+  return <button className={`architecture-component ${active ? 'component-active' : ''} ${source ? 'component-source' : ''} ${destination ? 'component-destination' : ''} ${selected === name ? 'component-selected' : ''}`} onClick={() => onSelect(name)} aria-pressed={selected === name}><span className="component-icon">{icon}</span><span className="component-label">{name}</span>{active && <i className="component-pulse"/>}</button>
 }
