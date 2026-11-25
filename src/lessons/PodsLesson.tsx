@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Boxes, Container, HardDrive, Network } from 'lucide-react'
+import LessonCoach from './LessonCoach'
 import './PodsLesson.css'
 export default function PodsLesson({onSelect}:{onSelect:(name:string)=>void}) {
-  const [sidecar,setSidecar]=useState(true)
+  const [sidecar,setSidecar]=useState(false)
   return <div className="pods-scene">
     <div className="scene-label-row"><span>NODE 01 · 10.0.4.12</span><span className="healthy-label">● NODE HEALTHY</span></div>
     <div className="pod-node-boundary"><div className="pod-node-title">WORKER NODE <span>kubelet · container runtime · CNI</span></div>
@@ -14,5 +15,6 @@ export default function PodsLesson({onSelect}:{onSelect:(name:string)=>void}) {
     </div>
     <div className="pod-actions"><button onClick={()=>setSidecar(v=>!v)}>{sidecar?'Remove sidecar':'Add sidecar container'}</button><span>Containers can be added or removed; the Pod remains one scheduling unit.</span></div>
     <div className="pod-insight"><b>BOUNDARY CHECK</b><span>One Pod IP · shared ports · optional shared volumes · containers scheduled together</span></div>
+    <LessonCoach task="Add the log-agent sidecar and watch what changes inside the Pod." hint="A sidecar is a second container in the same Pod. It shares the Pod network namespace and can use a shared mounted volume." complete={sidecar} success="Both containers remain in one Pod and share its network identity; the Pod is still scheduled as one unit."/>
   </div>
 }
