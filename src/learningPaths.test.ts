@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { courseLessonIds } from './KubernetesCourse'
-import { learningPaths, nextPathTopic, weeklyIncidentIndex } from './learningPaths'
+import { learningPaths, nextPathTopic, pathChapters, weeklyIncidentIndex } from './learningPaths'
 import { incidentCount, incidentTopics } from './App'
 
 describe('learning paths', () => {
@@ -10,6 +10,9 @@ describe('learning paths', () => {
       expect(path.topics.length).toBeGreaterThan(0)
       expect(path.topics.every(topic => available.has(topic.id))).toBe(true)
       expect(new Set(path.topics.map(topic => topic.id)).size).toBe(path.topics.length)
+      const chapters = pathChapters(path)
+      expect(chapters.flatMap(chapter => chapter.topics).map(topic => topic.id).sort()).toEqual(path.topics.map(topic => topic.id).sort())
+      expect(nextPathTopic(path, new Set()).id).toBe(chapters[0].topics[0].id)
     }
     expect(incidentTopics).toHaveLength(incidentCount)
     expect(incidentTopics.every(id => available.has(id))).toBe(true)

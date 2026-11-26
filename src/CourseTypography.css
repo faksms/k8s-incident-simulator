@@ -16,6 +16,7 @@
 .course-kicker{font-size:11px}
 .lesson-copy h1{font-size:31px;line-height:1.2}
 .lesson-description{font-size:15px;line-height:1.7}
+.course-path-context{grid-column:1/-1;margin:0 0 8px;padding:10px 12px;border:1px solid #3b6859;border-radius:8px;color:#c9e8d9;background:#102b25;font-size:13px;line-height:1.5}.course-footer button:disabled{opacity:.5;cursor:not-allowed}
 .learning-takeaway{font-size:14px;line-height:1.65}
 .learning-takeaway b{font-size:10px}
 .lesson-instruction{font-size:13px;line-height:1.55}
@@ -25,6 +26,7 @@
 .course-footer button{font-size:13px}
 .course-safety,.course-accessibility{font-size:11px;line-height:1.6}
 .pod-init-sequence{margin-top:12px;padding-top:10px;border-top:1px solid #35584c}
+.pod-explainer{margin:10px 0;color:#c5d9d4;font-size:12px;line-height:1.55}.pods-scene .pod-actions{margin-top:12px}
 .pod-init-sequence p{margin:0;color:#c5d9d4;font-size:12px;line-height:1.5}
 .pod-init-sequence p b{margin-right:8px;color:#90e0bf;font-family:'IBM Plex Mono',monospace}
 .pods-scene .pod-waiting{opacity:.7}

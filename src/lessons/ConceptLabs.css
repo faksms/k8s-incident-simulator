@@ -27,6 +27,7 @@
 .lab-motion i { width: 7px; height: 7px; border-radius: 50%; background: #75dfba; }
 .lab-actions { display: flex; flex-wrap: wrap; gap: 7px; }
 .lab-actions button:first-child { border-color: #60caa7; background: #164033; color: #ddfff0; }
+.lab-actions button:disabled { opacity: .5; cursor: not-allowed; }
 .lab-result { padding: 14px; border: 1px solid #38566a; border-radius: 9px; background: #102334; }
 .lab-result-good { border-color: #397755; background: #102a21; }
 .lab-result-warning { border-color: #916d3b; background: #2a241b; }

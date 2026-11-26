@@ -41,14 +41,14 @@ export default function PracticalLab({ onBack, onVerified }: { onBack: () => voi
     <div className="practical-layout">
       <section className="practical-brief" aria-labelledby="practical-title">
         <p className="practical-kicker">HANDS-ON LAB · SERVICES</p>
-        <h1 id="practical-title">The frontend is unreachable.</h1>
-        <p>Customers cannot reach the frontend Service. The application Pod is running. Investigate the Service and Pod, fix the problem, and verify the result.</p>
+        <h1 id="practical-title">Customers cannot reach the app.</h1>
+        <p>The frontend Service is not reaching the running app Pod. Find the problem, fix it, and check the result.</p>
         <div className="practical-objective">
           <strong>Your mission</strong>
-          <ol><li>Compare the Service selector with the Pod labels.</li><li>Correct the mismatch.</li><li>Inspect the Service again to verify its endpoints.</li></ol>
+          <ol><li>Compare the Service selector (the label it looks for) with the Pod labels.</li><li>Fix the label mismatch.</li><li>Check the Service again to see if it found the Pod as an endpoint.</li></ol>
         </div>
         <details><summary>Need a hint?</summary><p>Use <code>help</code> to see supported commands. Describe the Service and compare its selector with the labels shown on the Pod.</p></details>
-        <p className="practical-disclaimer">This is a simplified, browser-only simulation—not a real cluster or a general-purpose terminal. Only the commands listed by <code>help</code> are supported. Nothing is installed or executed on your computer.</p>
+        <p className="practical-disclaimer">This exercise runs only in your browser. It is not a real cluster or a full terminal. Only the commands shown by <code>help</code> work. Nothing is installed or run on your computer.</p>
         {state.verified && <div className="practical-success" role="status"><strong>Endpoint verified</strong><p>The Service selector now matches the Ready Pod. In a real cluster, also test traffic and investigate why the mismatch occurred.</p></div>}
       </section>
       <section className="practical-terminal" aria-labelledby="terminal-title">

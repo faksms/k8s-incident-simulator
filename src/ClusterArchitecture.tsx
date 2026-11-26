@@ -28,44 +28,44 @@ function KubernetesIcon({ src }: { src: string }) {
 }
 
 const phases = [
-  { title: 'Declare intent', route: ['kubectl', 'API server'], description: 'An operator submits a workload manifest. The API server authenticates, validates, and admits the request.' },
-  { title: 'Persist desired state', route: ['API server', 'etcd'], description: 'The API server stores the accepted object in etcd. etcd is the durable source of cluster state.' },
-  { title: 'Reconcile the workload', route: ['controller manager', 'API server'], description: 'Controllers watch API objects, compare desired with observed state, then create or update workload objects.' },
-  { title: 'Assign a node', route: ['scheduler', 'API server', 'kubelet'], description: 'The scheduler filters and scores eligible nodes, then records a binding through the API server.' },
-  { title: 'Start the Pod', route: ['kubelet', 'CRI runtime', 'CNI networking', 'Pod'], description: 'The kubelet asks the runtime to start the Pod; the runtime invokes CNI to configure its networking.' },
-  { title: 'Report health', route: ['kubelet', 'API server', 'controller manager'], description: 'Kubelet reports Pod status and probe results. Controllers observe the update and continue reconciling.' },
-  { title: 'Route application traffic', route: ['client', 'Service dataplane', 'ready Pod'], description: 'Application packets use the Service data plane to reach a ready Pod. This is separate from control-plane reconciliation.' },
+  { title: 'Describe what you want', route: ['kubectl', 'API server'], description: 'You send an app configuration file to the API server. It checks who you are, your access, and the request.' },
+  { title: 'Save the configuration', route: ['API server', 'etcd'], description: 'The API server saves the accepted configuration in etcd. etcd keeps this cluster information so the control plane can remember it.' },
+  { title: 'Work toward the goal', route: ['controller manager', 'API server'], description: 'Controllers compare what you asked for with what is running. They create or update objects to bring the two closer together.' },
+  { title: 'Choose a node', route: ['scheduler', 'API server', 'kubelet'], description: 'The scheduler checks which nodes can run the Pod, chooses one, and records the choice through the API server.' },
+  { title: 'Start the Pod', route: ['kubelet', 'CRI runtime', 'CNI networking', 'Pod'], description: 'The kubelet asks the container runtime to start the Pod. The runtime calls a network plugin to set up its network.' },
+  { title: 'Report health', route: ['kubelet', 'API server', 'controller manager'], description: 'The kubelet reports the Pod’s status and health check results. Controllers use this information to decide what to do next.' },
+  { title: 'Send traffic to the app', route: ['client', 'Service dataplane', 'ready Pod'], description: 'A Service forwards app traffic to a ready Pod. This traffic is separate from the control plane’s work to manage the cluster.' },
 ]
 
 type CommunicationLeg = { from: string; to: string; label: string }
 
 const communicationFlows: CommunicationLeg[][] = [
-  [{ from: 'kubectl', to: 'API server', label: 'kubectl submits the workload manifest to the API server' }],
-  [{ from: 'API server', to: 'etcd', label: 'API server persists the accepted desired state in etcd' }],
-  [{ from: 'Controller manager', to: 'API server', label: 'Controller manager observes state and reconciles through the API server' }],
-  [{ from: 'Scheduler', to: 'API server', label: 'Scheduler binds the Pod to a node through the API server' }],
+  [{ from: 'kubectl', to: 'API server', label: 'kubectl sends the app configuration to the API server' }],
+  [{ from: 'API server', to: 'etcd', label: 'the API server saves the accepted configuration in etcd' }],
+  [{ from: 'Controller manager', to: 'API server', label: 'controllers check and update objects through the API server' }],
+  [{ from: 'Scheduler', to: 'API server', label: 'the scheduler records the chosen node for the Pod' }],
   [{ from: 'kubelet', to: 'API server', label: 'kubelet watches the API server for its assigned Pod' }, { from: 'kubelet', to: 'CRI runtime', label: 'kubelet asks the runtime to start the Pod' }, { from: 'CRI runtime', to: 'CNI networking', label: 'the runtime invokes CNI to configure Pod networking' }, { from: 'CNI networking', to: 'Pod app-1', label: 'CNI configures networking for Pod app-1' }, { from: 'CRI runtime', to: 'Pod app-1', label: 'the runtime starts the containers in Pod app-1' }],
   [{ from: 'Pod app-1', to: 'kubelet', label: 'Pod app-1 reports status to kubelet' }, { from: 'kubelet', to: 'API server', label: 'kubelet reports health to the API server' }],
-  [{ from: 'Client', to: 'kube-proxy / eBPF', label: 'the client sends traffic to a Service VIP via the Service data plane' }, { from: 'kube-proxy / eBPF', to: 'Pod app-1', label: 'Service traffic reaches Pod app-1' }],
+  [{ from: 'Client', to: 'kube-proxy / eBPF', label: 'the client sends traffic to the Service address' }, { from: 'kube-proxy / eBPF', to: 'Pod app-1', label: 'Service traffic reaches Pod app-1' }],
 ]
 
 const componentInfo: Record<string, string> = {
-  'kubectl': 'Kubernetes CLI. Sends HTTPS API requests; it does not talk directly to Pods or etcd.',
-  'API server': 'The control plane front door. It authenticates, authorizes, validates, runs admission, and exposes the Kubernetes API.',
-  'etcd': 'Consistent key-value store holding durable cluster state. Only the API server accesses it directly.',
-  'Scheduler': 'Watches for unscheduled Pods, evaluates constraints and capacity, then writes a node binding through the API server.',
-  'Controller manager': 'Runs controllers that reconcile actual state toward the declared desired state.',
-  'Cloud controller': 'Optional cloud integration for provider-specific nodes, routes, and load balancers.',
-  'kubelet': 'Node agent. Watches the API for Pods assigned to its node, starts containers, and reports status.',
-  'kube-proxy / eBPF': 'Implements Service forwarding. Some clusters use an eBPF data plane instead.',
-  'CRI runtime': 'Container runtime such as containerd or CRI-O, managed through the Container Runtime Interface.',
-  'CNI networking': 'Container network plugin that configures Pod addresses and connectivity.',
-  'Pod': 'A scheduled workload unit containing one or more containers and a Pod IP.',
-  'Service dataplane': 'Data-plane forwarding from a Service virtual address to a ready endpoint. It does not pass through etcd.',
-  'Client': 'An application client sends traffic to a Service virtual IP; the Service data plane forwards it to a ready endpoint.',
+  'kubectl': 'The command-line tool for Kubernetes. It sends requests to the API server, not directly to Pods or etcd.',
+  'API server': 'The front door for managing Kubernetes. It checks identity, access, and requests before accepting changes.',
+  'etcd': 'The cluster’s key-value database. It stores cluster configuration and state so the control plane can remember them. The API server accesses it directly.',
+  'Scheduler': 'Finds Pods that need a node, checks their requirements and available space, then records its choice through the API server.',
+  'Controller manager': 'Runs controllers that compare what you requested with what is running and work to close the gap.',
+  'Cloud controller': 'An optional component that connects Kubernetes to cloud features such as load balancers and node information.',
+  'kubelet': 'An agent on each node. It watches for Pods assigned to that node, works with the runtime to start them, and reports their status.',
+  'kube-proxy / eBPF': 'Helps send Service traffic to a suitable Pod. Some clusters use eBPF instead of kube-proxy.',
+  'CRI runtime': 'Software such as containerd or CRI-O that runs containers. The kubelet talks to it through the Container Runtime Interface (CRI).',
+  'CNI networking': 'A network plugin that sets up Pod addresses and connections.',
+  'Pod': 'A group of one or more containers placed together on one node, with its own Pod IP.',
+  'Service dataplane': 'The network forwarding that sends traffic from a Service address to a ready endpoint. This traffic does not pass through etcd.',
+  'Client': 'An app that sends traffic to a Service address. Service forwarding then sends it to a ready endpoint.',
 }
 
-export default function ClusterArchitecture({ onComplete, onPractical, onDashboard, passed, onPass }: { onComplete: () => void; onPractical: () => void; onDashboard: () => void; passed: boolean; onPass: () => void }) {
+export default function ClusterArchitecture({ onComplete, onPractical, onDashboard, passed, onPass, trackName }: { onComplete: () => void; onPractical: () => void; onDashboard: () => void; passed: boolean; onPass: () => void; trackName?: string }) {
   const reducedMotion = useReducedMotion()
   const [phase, setPhase] = useState(0)
   const [playing, setPlaying] = useState(() => !reducedMotion)
@@ -224,7 +224,7 @@ export default function ClusterArchitecture({ onComplete, onPractical, onDashboa
 
     <div className="architecture-shell">
       <section className="architecture-intro">
-        <div><p className="architecture-kicker">START HERE · 01 / CLUSTER ARCHITECTURE</p><h1>Learn Kubernetes<br/><em>one step at a time.</em></h1><p className="architecture-lede">Kubernetes helps run and manage containerized applications across computers. Start with the map below, then explore Pods, networking, and hands-on incidents. No cluster setup is needed.</p></div>
+        <div><p className="architecture-kicker">START HERE · 01 / CLUSTER ARCHITECTURE</p><h1>Learn Kubernetes<br/><em>one step at a time.</em></h1><p className="architecture-lede">Kubernetes helps run and manage containerized applications across computers. Start with the map below, then explore Pods, networking, and hands-on incidents. No cluster setup is needed.</p>{trackName && <p className="architecture-lede">Learning path: <strong>{trackName}</strong>. Continue to the next topic in this path when you are ready.</p>}</div>
         <div className="architecture-legend"><span><i className="legend-control"/> CONTROL PLANE</span><span><i className="legend-data"/> DATA PLANE</span><span><i className="legend-state"/> STATE / STATUS</span></div>
       </section>
 
@@ -234,7 +234,7 @@ export default function ClusterArchitecture({ onComplete, onPractical, onDashboa
       </section>
 
       <section className="architecture-board" aria-label="Interactive Kubernetes architecture diagram">
-        <div className="board-topline"><span><Activity size={15}/> LIVE ARCHITECTURE MAP</span><span>DOTTED: HIGH-LEVEL LINKS <span aria-hidden="true">·</span> SOLID: ACTIVE HOP</span></div>
+        <div className="board-topline"><span><Activity size={15}/> INTERACTIVE CLUSTER MAP</span><span>DOTTED: CONNECTIONS <span aria-hidden="true">·</span> SOLID: CURRENT STEP</span></div>
         <div ref={mapRef} className={`architecture-map flow-dimming map-phase-${phase}`}>
           {topologyGeometry.lines.length > 0 && <svg className="k8s-static-topology" viewBox={`0 0 ${topologyGeometry.width} ${topologyGeometry.height}`} preserveAspectRatio="none" aria-hidden="true">
             <defs><marker id="k8s-topology-control-arrow" viewBox="0 0 10 10" refX="13" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#76b79e"/></marker><marker id="k8s-topology-data-arrow" viewBox="0 0 10 10" refX="13" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#70bfe8"/></marker></defs>
@@ -253,7 +253,7 @@ export default function ClusterArchitecture({ onComplete, onPractical, onDashboa
             <ComponentButton name="kubectl" icon={<Code2/>} selected={selected} active={isActive('kubectl')} source={isSource('kubectl')} destination={isDestination('kubectl')} onSelect={setSelected}/>
           </div>
           <section className="plane control-plane">
-            <div className="plane-heading"><div><KubernetesIcon src={kubernetesIcons.controlPlane}/><b>CONTROL PLANE</b></div><small>CLUSTER BRAIN · RECONCILES DESIRED STATE</small></div>
+            <div className="plane-heading"><div><KubernetesIcon src={kubernetesIcons.controlPlane}/><b>CONTROL PLANE</b></div><small>MANAGES THE CLUSTER</small></div>
             <div className="control-components">
               <ComponentButton name="API server" icon={<KubernetesIcon src={kubernetesIcons.api}/>} selected={selected} active={isActive('API server')} source={isSource('API server')} destination={isDestination('API server')} onSelect={setSelected}/>
               <ComponentButton name="etcd" icon={<KubernetesIcon src={kubernetesIcons.etcd}/>} selected={selected} active={isActive('etcd')} source={isSource('etcd')} destination={isDestination('etcd')} onSelect={setSelected}/>
@@ -266,7 +266,7 @@ export default function ClusterArchitecture({ onComplete, onPractical, onDashboa
             <ComponentButton name="Client" icon={<Network/>} selected={selected} active={isActive('Client')} source={isSource('Client')} destination={isDestination('Client')} onSelect={setSelected}/>
           </div>
           <section className="plane worker-plane">
-            <div className="plane-heading"><div><KubernetesIcon src={kubernetesIcons.node}/><b>WORKER NODES</b></div><small>DATA PLANE · RUNS APPLICATION WORKLOADS</small></div>
+            <div className="plane-heading"><div><KubernetesIcon src={kubernetesIcons.node}/><b>WORKER NODES</b></div><small>RUN YOUR APPLICATIONS</small></div>
             <div className="worker-grid">
               {[0, 1].map(node => <section className="worker-node" key={node}>
                 <div className="worker-title"><KubernetesIcon src={kubernetesIcons.node}/><b>NODE 0{node + 1}</b><span>HEALTHY</span></div>
@@ -285,7 +285,7 @@ export default function ClusterArchitecture({ onComplete, onPractical, onDashboa
         <div className="topology-explainer">
           <p><b>CONTROL</b> kubectl, the scheduler, controllers and kubelets use the API server; only the API server accesses etcd.</p>
           <p><b>TRAFFIC</b> Client → Service forwarding (kube-proxy / eBPF) → ready Pod. Packets do not pass through the API server.</p>
-          <p><b>POD SETUP</b> Kubelet asks the runtime to start Pods; the runtime invokes CNI for networking. The illustrative sequence loops; pause or select a step to inspect it.</p>
+          <p><b>POD SETUP</b> Kubelet asks the runtime to start Pods. The runtime calls a CNI plugin to set up networking. Pause or select a step to look more closely.</p>
         </div>
         <div className="communication-section" aria-live={playing ? 'off' : 'polite'}>
           <div className="communication-heading"><div><Network size={16}/><b>{phase === 6 ? 'APPLICATION TRAFFIC' : 'WORKLOAD CREATION'}</b></div><span>STEP {String(phase + 1).padStart(2, '0')} / {String(phases.length).padStart(2, '0')}</span></div>
@@ -304,7 +304,7 @@ export default function ClusterArchitecture({ onComplete, onPractical, onDashboa
 
       <LessonCoach task="Select the component that forwards Service traffic to a ready Pod." hint="Look on a worker node for kube-proxy / eBPF. It implements Service forwarding in the data plane; the API server stores configuration but does not carry application packets." complete={selected==='kube-proxy / eBPF'} success="Correct: Service forwarding is performed by the cluster data plane, not by etcd or the API server."/>
       <div className="architecture-bottom">
-        <div className="component-inspector"><CircleHelp size={17}/><span>{selected ? <><b>{selected}</b>{componentInfo[selected] ?? 'A component in the Kubernetes control and workload path.'}</> : 'Click any component in the map to inspect its role and communication boundaries.'}</span></div>
+        <div className="component-inspector"><CircleHelp size={17}/><span>{selected ? <><b>{selected}</b>{componentInfo[selected] ?? 'A component that helps manage or run the cluster.'}</> : 'Select a component in the map to learn what it does.'}</span></div>
         <div className="architecture-principle"><ShieldCheck size={16}/><span><b>Important boundary</b> Control traffic goes through the API server. Service packets are data-plane traffic; they do not pass through etcd.</span></div>
       </div>
       <LearningMaterials lessonId="architecture" passed={passed} onPass={onPass}/>

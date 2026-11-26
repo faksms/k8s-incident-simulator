@@ -24,6 +24,7 @@
 .dashboard-card ul{width:100%;margin:0 0 20px;padding:0;list-style:none}
 .dashboard-card li button{display:flex;align-items:center;gap:8px;width:100%;padding:7px 0;border:0;background:transparent;color:#c5d6e2;text-align:left}
 .dashboard-card li svg,.dashboard-card li span{flex:none;color:#80dcb9}
+.path-chapters{width:100%;margin:4px 0 16px}.path-chapter{padding:10px 0;border-top:1px solid #34485e}.path-chapter h4{margin:0;color:#dce7f5;font-size:13px}.path-chapter small{color:#a7d7c3;font-size:11px}.path-chapter ul{margin:4px 0 0}
 .dashboard-primary{margin-top:auto;border-color:#75dfba;background:#69d6ae;color:#09241b;text-align:left;font-size:13px}
 .architecture-learning-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
 @media(max-width:620px){.course-header .course-skip{font-size:11px;margin-left:0}.course-header .course-brand{margin-right:auto}.course-header{height:auto;min-height:62px;flex-wrap:wrap;padding-top:8px;padding-bottom:8px}}

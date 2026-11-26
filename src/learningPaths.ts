@@ -1,14 +1,18 @@
+import { courseChapters, flattenTopics } from './courseCatalog'
+
 export type LearningPath = {
   id: string
   title: string
   description: string
+  career: string
   topics: { id: string; title: string }[]
 }
 
 export const learningPaths: LearningPath[] = [
   {
     id: 'beginner', title: 'Kubernetes beginner',
-    description: 'Build a mental model, then connect workloads to traffic.',
+    description: 'Learn the basic parts of a cluster and how an app receives traffic.',
+    career: 'Start here if you are new. These basics support every Kubernetes role.',
     topics: [
       { id: 'architecture', title: 'Cluster architecture' },
       { id: 'pods', title: 'Pods and containers' },
@@ -18,7 +22,8 @@ export const learningPaths: LearningPath[] = [
   },
   {
     id: 'operator', title: 'Kubernetes operator',
-    description: 'Explore networking, persistent data, access, and workload controls.',
+    description: 'Learn how to manage access, networking, data, and resources.',
+    career: 'A next step toward running and maintaining clusters as a platform or Kubernetes engineer.',
     topics: [
       { id: 'namespaces', title: 'Namespaces' },
       { id: 'dns', title: 'Service discovery and DNS' },
@@ -29,7 +34,8 @@ export const learningPaths: LearningPath[] = [
   },
   {
     id: 'responder', title: 'Incident responder',
-    description: 'Learn the signals behind common workload and traffic failures.',
+    description: 'Learn how to spot and investigate common app and traffic problems.',
+    career: 'Build skills used by support engineers, SREs, and people on call.',
     topics: [
       { id: 'pods', title: 'Pods and containers' },
       { id: 'probes', title: 'Health probes' },
@@ -40,7 +46,8 @@ export const learningPaths: LearningPath[] = [
   },
   {
     id: 'cka', title: 'CKA topic explorer',
-    description: 'Explore cluster administration, scheduling, networking, storage, and troubleshooting.',
+    description: 'Explore key cluster administration topics that appear in CKA study.',
+    career: 'Use this as an introduction to administrator skills, then practice on a real cluster for the exam.',
     topics: [
       { id: 'kubeadm', title: 'Cluster bootstrap' },
       { id: 'cluster-lifecycle', title: 'Cluster upgrades and availability' },
@@ -66,8 +73,16 @@ export const learningPaths: LearningPath[] = [
 export const serviceLabProgressId = 'practice:service-lab'
 export function incidentProgressId(index: number) { return `incident:${index}` }
 
+export function pathChapters(path: LearningPath) {
+  return courseChapters.map(chapter => {
+    const ids = new Set(flattenTopics(chapter.topics))
+    return { id: chapter.id, title: chapter.title, topics: path.topics.filter(topic => ids.has(topic.id)) }
+  }).filter(chapter => chapter.topics.length > 0)
+}
+
 export function nextPathTopic(path: LearningPath, passed: Set<string>) {
-  return path.topics.find(topic => !passed.has(topic.id)) ?? path.topics[0]
+  const topics = pathChapters(path).flatMap(chapter => chapter.topics)
+  return topics.find(topic => !passed.has(topic.id)) ?? topics[0]
 }
 
 export function weeklyIncidentIndex(date: Date, count: number) {

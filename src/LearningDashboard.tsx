@@ -1,5 +1,5 @@
 import { ArrowLeft, ArrowRight, BookOpen, CheckCircle2, Terminal } from 'lucide-react'
-import { incidentProgressId, learningPaths, nextPathTopic, serviceLabProgressId } from './learningPaths'
+import { incidentProgressId, learningPaths, nextPathTopic, pathChapters, serviceLabProgressId } from './learningPaths'
 import type { PracticeProgress } from './practiceProgress'
 import './LearningDashboard.css'
 
@@ -9,7 +9,7 @@ type Props = {
   lessonIds: string[]
   incidentCount: number
   weeklyIndex: number
-  onTopic: (id: string) => void
+  onTopic: (id: string, track?: string) => void
   onLab: () => void
   onIncident: (index: number) => void
   onBack: () => void
@@ -42,17 +42,21 @@ export default function LearningDashboard({ passed, practiceProgress, lessonIds,
         <p>Counts include repeat runs and only record completed reviews. Guided runs include automatic tips; use these signals to decide what to revisit, not as a score.</p>
       </section>
       <section aria-labelledby="paths-title">
-        <div className="dashboard-section-heading"><div><p className="dashboard-kicker">CHOOSE YOUR DIRECTION</p><h2 id="paths-title">Learning paths</h2></div><p>Checks count across paths. Use the dashboard to return to your next topic.</p></div>
+        <div className="dashboard-section-heading"><div><p className="dashboard-kicker">CHOOSE YOUR DIRECTION</p><h2 id="paths-title">Your chapter-by-chapter journey</h2></div><p>Start with the beginner path, then choose a direction. A passed check counts in every path that uses that topic.</p></div>
         <div className="dashboard-paths">{learningPaths.map(path => {
           const count = path.topics.filter(topic => passed.has(topic.id)).length
           const next = nextPathTopic(path, passed)
           return <article className="dashboard-card" key={path.id}>
-            <BookOpen size={22}/><h3>{path.title}</h3><p>{path.description}</p>
+            <BookOpen size={22}/><h3>{path.title}</h3><p>{path.description}</p><p><strong>Where this helps:</strong> {path.career}</p>
             {path.id === 'cka' && <p>Introductory topic coverage, not a complete CKA preparation course. The exam is hands-on; this site uses simulations. See the <a href="https://training.linuxfoundation.org/certification/certified-kubernetes-administrator-cka/" target="_blank" rel="noreferrer">official CKA information</a>.</p>}
             <div className="dashboard-count">{count} / {path.topics.length} checks passed</div>
             <progress value={count} max={path.topics.length} aria-label={`${path.title} checks passed`}/>
-            <ul>{path.topics.map(topic => <li key={topic.id}><button onClick={() => onTopic(topic.id)}>{passed.has(topic.id) ? <CheckCircle2 size={15}/> : <span aria-hidden="true">○</span>}{topic.title}</button></li>)}</ul>
-            <button className="dashboard-primary" onClick={() => onTopic(next.id)}>{count === path.topics.length ? 'Review' : 'Continue'}: {next.title} <ArrowRight size={15}/></button>
+            <div className="path-chapters">{pathChapters(path).map((chapter, index) => <section key={chapter.id} className="path-chapter">
+              <h4>Chapter {index + 1}: {chapter.title}</h4>
+              <small>{chapter.topics.filter(topic => passed.has(topic.id)).length} / {chapter.topics.length} checks passed</small>
+              <ul>{chapter.topics.map(topic => <li key={topic.id}><button onClick={() => onTopic(topic.id, path.id)}>{passed.has(topic.id) ? <CheckCircle2 size={15}/> : <span aria-hidden="true">○</span>}{topic.title}</button></li>)}</ul>
+            </section>)}</div>
+            <button className="dashboard-primary" onClick={() => onTopic(next.id, path.id)}>{count === path.topics.length ? 'Review' : 'Continue'}: {next.title} <ArrowRight size={15}/></button>
           </article>
         })}</div>
       </section>

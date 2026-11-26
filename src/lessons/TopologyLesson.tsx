@@ -2,7 +2,6 @@ import { useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
 import { Cuboid, RotateCcw, ShieldCheck } from 'lucide-react'
 import LessonCoach from './LessonCoach'
-import SignalTrace from './SignalTrace'
 import './TopologyLesson.css'
 import './TopologyLessonInteraction.css'
 import './ModuleDiagramPolish.css'
@@ -30,7 +29,6 @@ export default function TopologyLesson({ onSelect }: { onSelect: (name: string) 
   const [failedTarget, setFailedTarget] = useState('node-02')
   const [failureActive, setFailureActive] = useState(false)
   const [preferredNode, setPreferredNode] = useState('any')
-  const [traceToken, setTraceToken] = useState(0)
 
   const placements = useMemo<Placement[]>(() => {
     const eligible = nodes.map((_, index) => index).filter(index => {
@@ -92,7 +90,6 @@ export default function TopologyLesson({ onSelect }: { onSelect: (name: string) 
 
   function triggerFailure() {
     setFailureActive(value => !value)
-    setTraceToken(value => value + 1)
   }
 
   function reset() {
@@ -103,7 +100,6 @@ export default function TopologyLesson({ onSelect }: { onSelect: (name: string) 
     setFailedTarget('node-02')
     setFailureActive(false)
     setPreferredNode('any')
-    setTraceToken(value => value + 1)
   }
 
   const targetOptions = failureScope === 'node' ? nodes.map(node => node.name) : zones
@@ -112,14 +108,14 @@ export default function TopologyLesson({ onSelect }: { onSelect: (name: string) 
 
   return <div className="topology-scene">
     <div className="topology-toolbar">
-      <label>DESIRED PODS <input aria-label="Desired Pod replica count" type="range" min="4" max="12" value={replicas} onChange={event => { setReplicas(Number(event.target.value)); setTraceToken(value => value + 1) }}/><b>{replicas}</b></label>
-      <label>SPREAD BY <select aria-label="Topology spread topology key" value={spreadKey} onChange={event => { setSpreadKey(event.target.value as SpreadKey); setTraceToken(value => value + 1) }}><option value="node">Node · kubernetes.io/hostname</option><option value="zone">Zone · topology.kubernetes.io/zone</option></select></label>
-      <label>WHEN UNSATISFIABLE <select aria-label="Topology spread scheduling policy" value={policy} onChange={event => { setPolicy(event.target.value as PlacementPolicy); setTraceToken(value => value + 1) }}><option value="strict">DoNotSchedule</option><option value="best-effort">ScheduleAnyway</option></select></label>
+      <label>DESIRED PODS <input aria-label="Desired Pod replica count" type="range" min="4" max="12" value={replicas} onChange={event => setReplicas(Number(event.target.value))}/><b>{replicas}</b></label>
+      <label>SPREAD BY <select aria-label="Topology spread topology key" value={spreadKey} onChange={event => setSpreadKey(event.target.value as SpreadKey)}><option value="node">Node · kubernetes.io/hostname</option><option value="zone">Zone · topology.kubernetes.io/zone</option></select></label>
+      <label>WHEN UNSATISFIABLE <select aria-label="Topology spread scheduling policy" value={policy} onChange={event => setPolicy(event.target.value as PlacementPolicy)}><option value="strict">DoNotSchedule</option><option value="best-effort">ScheduleAnyway</option></select></label>
     </div>
     <div className="topology-secondary-controls">
-      <label>FAILURE SCOPE <select aria-label="Failure scope" value={failureScope} onChange={event => { const scope = event.target.value as FailureScope; setFailureScope(scope); setFailedTarget(scope === 'node' ? 'node-02' : 'zone-a'); setFailureActive(false); setTraceToken(value => value + 1) }}><option value="node">One node</option><option value="zone">Entire zone</option></select></label>
-      <label>FAIL <select aria-label="Node or zone to fail" value={failedTarget} onChange={event => { setFailedTarget(event.target.value); setTraceToken(value => value + 1) }}>{targetOptions.map(target => <option key={target} value={target}>{target}</option>)}</select></label>
-      <label>PLACEMENT PREFERENCE <select aria-label="Pod placement preference" value={preferredNode} onChange={event => { setPreferredNode(event.target.value); setTraceToken(value => value + 1) }}><option value="any">Any eligible node</option>{nodes.filter(node => !(failureActive && (failureScope === 'node' ? node.name === failedTarget : node.zone === failedTarget))).map(node => <option key={node.name} value={node.name}>{node.name} only</option>)}</select></label>
+      <label>FAILURE SCOPE <select aria-label="Failure scope" value={failureScope} onChange={event => { const scope = event.target.value as FailureScope; setFailureScope(scope); setFailedTarget(scope === 'node' ? 'node-02' : 'zone-a'); setFailureActive(false) }}><option value="node">One node</option><option value="zone">Entire zone</option></select></label>
+      <label>FAIL <select aria-label="Node or zone to fail" value={failedTarget} onChange={event => setFailedTarget(event.target.value)}>{targetOptions.map(target => <option key={target} value={target}>{target}</option>)}</select></label>
+      <label>PLACEMENT PREFERENCE <select aria-label="Pod placement preference" value={preferredNode} onChange={event => setPreferredNode(event.target.value)}><option value="any">Any eligible node</option>{nodes.filter(node => !(failureActive && (failureScope === 'node' ? node.name === failedTarget : node.zone === failedTarget))).map(node => <option key={node.name} value={node.name}>{node.name} only</option>)}</select></label>
       <button className={`topology-failure-button ${failureActive ? 'failure-active' : ''}`} onClick={triggerFailure}>{failureActive ? 'Restore domain' : 'Simulate failure'}</button>
       <button className="topology-reset-button" onClick={reset}><RotateCcw size={14}/> Reset</button>
     </div>
@@ -140,12 +136,6 @@ export default function TopologyLesson({ onSelect }: { onSelect: (name: string) 
     })}{pending > 0 && <motion.section className="pending-node-card" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}><span className="pending-pulse"/><b>{pending} PENDING</b><small>{policy === 'strict' ? 'maxSkew blocks placement' : 'no eligible capacity'}</small></motion.section>}</div>
 
     <div className="topology-zone-summary" aria-label="Pod counts per zone">{zones.map((zone, index) => <div key={zone}><span>{zone}</span><b>{countsByZone[index]} Pods</b></div>)}</div>
-    <SignalTrace title={`SCHEDULER · SPREAD BY ${spreadKey.toUpperCase()}`} steps={[
-      {label:'Pod is unscheduled',detail:'A new Pod needs a node. This illustrative path shows the placement decisions modeled below the controls.'},
-      {label:'filter active nodes',detail:`The example considers ${activeNodes} active node${activeNodes === 1 ? '' : 's'} and the selected placement preference.`},
-      {label:`compare ${spreadKey} skew`,detail:`The model compares Pod counts by ${spreadKey}; the displayed difference is ${skew}. The selected policy controls whether imbalance prevents placement.`},
-      {label:pending ? 'Pod remains Pending' : 'bind Pod to node',detail:pending ? `${pending} Pod${pending === 1 ? ' remains' : 's remain'} Pending in this example. Review the failure and placement settings above.` : 'No Pods are Pending in this example. Eligible replacements can be assigned to nodes.'},
-    ]} playToken={traceToken}/>
     <p className="topology-note">{!failureActive ? spreadKey === 'node' ? 'Node-level spreading distributes replicas across hostnames. Nodes 01 and 02 share zone A, so balanced node placement does not guarantee balanced zone placement.' : 'Zone-level spreading balances replicas across failure domains, while multiple nodes within a zone provide additional local capacity.' : pending > 0 ? `${pending} Pod${pending === 1 ? '' : 's'} cannot be placed after ${failedTarget} failed${policy === 'strict' ? ' because DoNotSchedule enforces maxSkew' : ' because no eligible node satisfies the placement preference'}.` : `The scheduler placed replacement Pods after ${failedTarget} failed. Compare node counts above with zone totals to see the selected topology key’s effect.`}</p>
     <LessonCoach task="Compare node and zone spread, then fail node-02 and inspect how replicas move. Try failing zone-a next." hint="topologyKey selects the domain counted by maxSkew. kubernetes.io/hostname counts each node separately; topology.kubernetes.io/zone counts all nodes in the same zone as one domain. A failure only removes capacity in its scope. DoNotSchedule may leave Pods pending when hard spread cannot be met; ScheduleAnyway treats spread as a preference." complete={learnerCompared} success="You compared host-level and zone-level spread and observed how failures affect their domains. Node spread alone does not ensure zone resilience."/>
   </div>

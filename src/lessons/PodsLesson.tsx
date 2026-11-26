@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { Boxes, Container, HardDrive, Network, PackageCheck, Route } from 'lucide-react'
 import LessonCoach from './LessonCoach'
-import SignalTrace from './SignalTrace'
 import StepSequenceControls from './StepSequenceControls'
 import './PodsLesson.css'
 import './ModuleDiagramPolish.css'
@@ -48,21 +47,17 @@ export default function PodsLesson({onSelect}:{onSelect:(name:string)=>void}) {
             {extras.ambassador&&<motion.button key="ambassador" className="pod-container ambassador-container" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} onClick={()=>onSelect('Ambassador container')}><Route/><b>api-proxy</b><small>egress proxy</small><i>{appRunning?'RUNNING':'WAITING'}</i></motion.button>}
           </AnimatePresence>
         </div>
-        <div className="pod-shared-row"><button onClick={()=>onSelect('Shared network namespace')}><Network size={14}/> Shared network namespace · localhost</button><button onClick={()=>onSelect('Shared volume')}><HardDrive size={14}/> Shared mounted volume</button></div>
+        <p className="pod-explainer">A Pod is a group of containers that Kubernetes places together on one node. They share one IP address and can talk to each other using <code>localhost</code>.</p>
+        <div className="pod-shared-row"><button onClick={()=>onSelect('Shared network namespace')}><Network size={14}/> Shared network · localhost</button><button onClick={()=>onSelect('Shared volume')}><HardDrive size={14}/> Shared mounted volume</button></div>
+        <p className="pod-explainer" aria-live="polite">{appRunning ? 'The app container is running. Add a helper below to see where it fits.' : 'The app is waiting for the init container to finish its setup.'}</p>
         {extras.init&&<div className="pod-init-sequence"><p aria-live="polite"><b>{step+1} / {initSteps.length}</b> {initSteps[step]}</p><StepSequenceControls active={step} total={initSteps.length} playing={playing} onPrevious={()=>{setPlaying(false);setStep(value=>Math.max(0,value-1))}} onNext={()=>{setPlaying(false);setStep(value=>Math.min(initSteps.length-1,value+1))}} onToggle={()=>{if(step===initSteps.length-1)setStep(0);setPlaying(value=>!value)}} onReset={()=>{setPlaying(false);setStep(0)}} compact/></div>}
+        <div className="pod-actions">
+          <button className={extras.init?'action-active':''} onClick={()=>toggle('init')}>{extras.init?'Remove':'Add'} init container</button>
+          <button className={extras.sidecar?'action-active':''} onClick={()=>toggle('sidecar')}>{extras.sidecar?'Remove':'Add'} sidecar</button>
+          <button className={extras.ambassador?'action-active':''} onClick={()=>toggle('ambassador')}>{extras.ambassador?'Remove':'Add'} ambassador</button>
+        </div>
+        <LessonCoach task="Add an init container, a sidecar, and an ambassador. Select each one to learn what it does." hint="An init container finishes setup first. A sidecar helps the app while it runs. An ambassador helps the app connect to other services." complete={complete} success="You explored three kinds of helpers inside one Pod."/>
       </div></div>
     </div>
-    <div className="pod-actions">
-      <button className={extras.init?'action-active':''} onClick={()=>toggle('init')}>{extras.init?'Remove':'Add'} init container</button>
-      <button className={extras.sidecar?'action-active':''} onClick={()=>toggle('sidecar')}>{extras.sidecar?'Remove':'Add'} sidecar</button>
-      <button className={extras.ambassador?'action-active':''} onClick={()=>toggle('ambassador')}>{extras.ambassador?'Remove':'Add'} ambassador</button>
-    </div>
-    <SignalTrace title="POD RESOURCE MAP" steps={[
-      {label:'Pod sandbox',detail:'The boundary represents one Pod on the worker node. Its containers are scheduled together.'},
-      {label:'shared network',detail:'Containers in this Pod share an IP address and can reach each other through localhost.'},
-      {label:'application container',detail:appRunning ? 'The application is running in the Pod. Add helpers above to compare their roles.' : 'The application is waiting for the init container to finish setup.'},
-    ]}/>
-    <div className="pod-insight"><b>BOUNDARY CHECK</b><span>One Pod IP · shared ports · init/setup lifecycle · helpers share the application lifecycle</span></div>
-    <LessonCoach task="Build a Pod with an init container, a sidecar, and an ambassador. Then compare their roles." hint="Init containers finish in sequence before app containers start. Sidecars work alongside the app. Ambassadors proxy or abstract connections for the app." complete={complete} success="You explored all three helper patterns inside a shared Pod boundary."/>
   </div>
 }

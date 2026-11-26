@@ -10,12 +10,16 @@ import TrafficLesson from './lessons/TrafficLesson'
 import TopologyLesson from './lessons/TopologyLesson'
 import ResourceQuotaLesson from './lessons/ResourceQuotaLesson'
 import ResourceRequestsLesson from './lessons/ResourceRequestsLesson'
-import { DiscoveryLab, StorageLab } from './lessons/ConceptLabs'
+import { AccessLab, ConfigurationLab, DiscoveryLab, NamespaceLab, RolloutLab, SchedulingLab, StorageLab } from './lessons/ConceptLabs'
+import { foundationLabs } from './lessons/FoundationLabs'
+import { administrationLabs } from './lessons/AdministrationLabs'
+import { networkStorageLessonLabs } from './lessons/NetworkStorageLabs'
 import LearningMaterials, { materials } from './LearningMaterials'
 import type { Material } from './LearningMaterials'
-import { ExtendedLessonScene, extendedLessons } from './ExtendedLessons'
+import { extendedLessons } from './ExtendedLessons'
 import { ckaLessons } from './ckaLessons'
 import { courseChapters, filterTopics, flattenTopics } from './courseCatalog'
+import { learningPaths, pathChapters } from './learningPaths'
 import { incidentTopics } from './App'
 import type { TopicNode } from './courseCatalog'
 import './lessons/CourseShell.css'
@@ -25,16 +29,21 @@ import './lessons/WorkloadMotion.css'
 type LessonProps = { onSelect: (name: string) => void }
 type Lesson = { id:string; title:string; subtitle:string; body:string; takeaway:string; Component:ComponentType<LessonProps> }
 const lessons:Lesson[] = [
-  {id:'pods',title:'Pods & containers',subtitle:'02 · THE POD ABSTRACTION',body:'A Pod is the smallest deployable unit. Containers in one Pod share a network identity and can share mounted volumes. Compare application, init, sidecar, and ambassador containers.',takeaway:'The Pod is the scheduling unit—not an individual container.',Component:PodsLesson},
-  {id:'probes',title:'Startup, readiness & liveness',subtitle:'03 · CONTAINER HEALTH',body:'Kubernetes probes let a container report initialization, traffic readiness, and process health. Compare how each result changes Pod behavior and endpoint eligibility.',takeaway:'Startup gates checks, readiness gates traffic, and liveness can restart a container.',Component:ProbesLesson},
-  {id:'deployments',title:'Deployments & reconciliation',subtitle:'04 · DESIRED STATE',body:'A Deployment declares how many replicas should exist. Its controller continually reconciles observed state toward that target, creating replacements when Pods disappear.',takeaway:'Controllers repair drift by acting on declared intent.',Component:DeploymentLesson},
-  {id:'services',title:'Services & ready endpoints',subtitle:'05 · DISCOVERY AND ROUTING',body:'A Service provides a stable virtual address. Selectors identify matching Pods, and readiness determines which matching Pods are published as usable endpoints.',takeaway:'Matching labels are not enough: only Ready endpoints should receive traffic.',Component:ServiceLesson},
-  {id:'traffic',title:'Ingress to application traffic',subtitle:'06 · REQUEST JOURNEY',body:'External HTTP traffic travels through infrastructure and Kubernetes resources before reaching a container. Watch each hop and distinguish the edge, routing, and workload responsibilities.',takeaway:'Ingress/Gateway routes to a Service; the Service data plane selects a ready Pod.',Component:TrafficLesson},
-  {id:'topology',title:'Resilience across failure domains',subtitle:'07 · SCHEDULING AND AVAILABILITY',body:'Topology spread constraints influence placement across zones or nodes. Simulate an outage and see how policy and remaining capacity affect replacement scheduling.',takeaway:'Spread reduces correlated failure risk; it does not create capacity.',Component:TopologyLesson},
-  {id:'resource-requests',title:'Pod resource requests & limits',subtitle:'08 · SCHEDULING AND RUNTIME',body:'Tune a Pod’s CPU and memory requests and limits. Watch requests determine placement while runtime usage can trigger CPU throttling or a memory OOM kill.',takeaway:'Requests shape scheduling; limits constrain runtime consumption.',Component:ResourceRequestsLesson},
-  {id:'resource-quota',title:'Namespace resource quotas',subtitle:'09 · RESOURCE GOVERNANCE',body:'ResourceQuota places hard aggregate limits on namespaced resources. See how the API admission check compares a new workload with the namespace budget before creating Pods.',takeaway:'A workload request is admitted only when all applicable hard quotas have room.',Component:ResourceQuotaLesson},
+  {id:'pods',title:'Pods & containers',subtitle:'02 · THE POD ABSTRACTION',body:'A Pod is the smallest unit Kubernetes places on a node. Its containers share an IP address and can share files. Compare the app container with containers that help it.',takeaway:'Kubernetes places the whole Pod on a node, not each container separately.',Component:PodsLesson},
+  {id:'probes',title:'Startup, readiness & liveness',subtitle:'03 · CONTAINER HEALTH',body:'Probes are health checks. See how Kubernetes checks whether an app has started, is ready for traffic, or needs a restart.',takeaway:'Startup waits for the app; readiness controls traffic; liveness can restart a container.',Component:ProbesLesson},
+  {id:'deployments',title:'Deployments & reconciliation',subtitle:'04 · DESIRED STATE',body:'A Deployment says how many copies of your app should run. Its controller checks the cluster and tries to replace missing Pods.',takeaway:'A controller keeps working to match the number of copies you requested.',Component:DeploymentLesson},
+  {id:'services',title:'Services & ready endpoints',subtitle:'05 · DISCOVERY AND ROUTING',body:'A Service gives an app a stable address. It uses labels to find matching Pods, then normally sends traffic to those that are ready.',takeaway:'Labels must match, and Pods normally need to be ready to receive traffic.',Component:ServiceLesson},
+  {id:'traffic',title:'Ingress to application traffic',subtitle:'06 · REQUEST JOURNEY',body:'Follow an HTTP request from outside the cluster to an app container. See what the entry point, routing rules, and Service each do.',takeaway:'Ingress or Gateway routes to a Service; the Service normally sends traffic to a ready Pod.',Component:TrafficLesson},
+  {id:'topology',title:'Resilience across failure domains',subtitle:'07 · SCHEDULING AND AVAILABILITY',body:'Spread rules help place app copies across nodes or zones. Try an outage and see whether the remaining nodes have room for replacement Pods.',takeaway:'Spreading copies can reduce the impact of a failure, but it does not create extra capacity.',Component:TopologyLesson},
+  {id:'resource-requests',title:'Pod resource requests & limits',subtitle:'08 · SCHEDULING AND RUNTIME',body:'Change a Pod’s CPU and memory requests and limits. See how requests help find a node and how limits can slow or stop a container.',takeaway:'Requests help place a Pod; limits control how much a container can use.',Component:ResourceRequestsLesson},
+  {id:'resource-quota',title:'Namespace resource quotas',subtitle:'09 · RESOURCE GOVERNANCE',body:'A ResourceQuota sets a shared resource budget for a namespace. See how the API checks the budget before accepting new Pods.',takeaway:'A new Pod must fit within all the quotas that apply to it.',Component:ResourceQuotaLesson},
 ]
 const allExtendedLessons = [...extendedLessons, ...ckaLessons]
+export const specializedLessonScenes: Record<string, ComponentType> = {
+  ...foundationLabs, ...administrationLabs, ...networkStorageLessonLabs,
+  dns: DiscoveryLab, storage: StorageLab, rbac: AccessLab, scheduling: SchedulingLab,
+  namespaces: NamespaceLab, configuration: ConfigurationLab, rollouts: RolloutLab,
+}
 const allLessons = [...lessons, ...allExtendedLessons]
 const orderedIds = courseChapters.flatMap(chapter => flattenTopics(chapter.topics))
 export const courseLessonIds = allLessons.map(lesson => lesson.id)
@@ -47,15 +56,15 @@ export function matchesTopic(query: string, title: string, body: string, materia
 
 function describeSelection(name:string) {
   const descriptions:Record<string,string> = {
-    'Application container':'Runs the main application process and typically serves traffic or performs the workload’s primary function.',
-    'Init container':'Runs to completion before application containers start. Init containers run sequentially and can perform migrations or setup that must finish first.',
-    'Sidecar container':'A helper that runs alongside the application. This example uses a regular app container; native restartable sidecars instead use initContainers with restartPolicy: Always and can start before app containers.',
-    'Ambassador container':'Acts as a local proxy or gateway for the application container. The app can use localhost while the ambassador translates destinations, protocols, authentication, or routing.',
-    'Startup probe':'Checks whether the application has finished initialization. While it fails, startup gates liveness and readiness checks for that container.',
-    'Readiness probe':'Determines whether the container is ready to receive traffic. Failure marks the Pod NotReady and removes it from normal Service endpoints without necessarily restarting it.',
-    'Liveness probe':'Checks whether the container process is running correctly. Repeated failure restarts the container according to the Pod restart policy.',
-    'Shared network namespace':'Containers in this Pod share one IP address and localhost. They must coordinate ports to avoid collisions.',
-    'Shared volume':'A mounted volume lets containers in one Pod read or write shared files. The volume type determines how long that data lasts.',
+    'Application container':'Runs the main app, such as a website or an API.',
+    'Init container':'An ordinary init container finishes its job before app containers start. Init containers run one at a time and can prepare things the app needs.',
+    'Sidecar container':'A helper that runs alongside the app. Here it is a regular app container. Kubernetes also supports restartable sidecars under initContainers; those can start before app containers.',
+    'Ambassador container':'A helper that handles connections for the app. The app talks to it through localhost, and it can connect to another service.',
+    'Startup probe':'A health check that waits for the app to start. Until it succeeds, the container’s readiness and liveness checks do not run.',
+    'Readiness probe':'Checks whether the app is ready for traffic. Failure makes the Pod NotReady for normal Service traffic; it does not by itself restart the container.',
+    'Liveness probe':'Checks whether the container is healthy. Repeated failures can restart it according to the Pod restart policy.',
+    'Shared network namespace':'Containers in this Pod share an IP address and can talk using localhost. They must avoid using the same listening port.',
+    'Shared volume':'Containers in a Pod can mount the same volume to share files. The type of volume determines how long those files last.',
     'Service':'A stable virtual endpoint. Its selector identifies Pods, while readiness and port mapping determine usable backends.',
     'Client':'A caller uses a stable Service name rather than relying on replaceable Pod IP addresses.',
     'Ingress / Gateway':'A controller interprets host, path, and listener rules and routes toward a backend Service.',
@@ -76,7 +85,7 @@ function describeSelection(name:string) {
   return 'Inspect the simulation state and compare it with the field notes below to understand this component’s role.'
 }
 
-export default function KubernetesCourse({index,onIndexChange,passedLessons,onPass,onArchitecture,onComplete,onSkip,onPractical,onDashboard,onRelatedIncident}:{index:number;onIndexChange:(index:number)=>void;passedLessons:Set<string>;onPass:(id:string)=>void;onArchitecture:()=>void;onComplete:()=>void;onSkip:()=>void;onPractical:()=>void;onDashboard:()=>void;onRelatedIncident:(index:number)=>void}) {
+export default function KubernetesCourse({index,track,onIndexChange,passedLessons,onPass,onArchitecture,onComplete,onSkip,onPractical,onDashboard,onRelatedIncident}:{index:number;track?:string;onIndexChange:(index:number,track?:string)=>void;passedLessons:Set<string>;onPass:(id:string)=>void;onArchitecture:(track?:string)=>void;onComplete:()=>void;onSkip:()=>void;onPractical:()=>void;onDashboard:()=>void;onRelatedIncident:(index:number)=>void}) {
   const [selected,setSelected] = useState('')
   const [query, setQuery] = useState('')
   const [indexOpen, setIndexOpen] = useState(false)
@@ -87,7 +96,12 @@ export default function KubernetesCourse({index,onIndexChange,passedLessons,onPa
   const standardLesson = lessons[index]
   const extendedLesson = allExtendedLessons[index - lessons.length]
   const Scene = standardLesson?.Component
+  const SpecializedScene = specializedLessonScenes[lesson.id]
+  if (!Scene && !SpecializedScene) throw new Error(`Missing interactive scene for lesson: ${lesson.id}`)
   const currentPosition = orderedIds.indexOf(lesson.id)
+  const activePath = learningPaths.find(path => path.id === track)
+  const navigationIds = activePath ? pathChapters(activePath).flatMap(chapter => chapter.topics.map(topic => topic.id)) : orderedIds
+  const navigationPosition = navigationIds.indexOf(lesson.id)
   const currentChapter = courseChapters.find(chapter => flattenTopics(chapter.topics).includes(lesson.id))!
   const matchingChapters = courseChapters.map(chapter => ({
     ...chapter,
@@ -100,6 +114,10 @@ export default function KubernetesCourse({index,onIndexChange,passedLessons,onPa
   })).filter(chapter => chapter.topics.length > 0)
   const shownCount = matchingChapters.reduce((count, chapter) => count + flattenTopics(chapter.topics).length, 0)
   useEffect(() => {
+    setSelected('')
+    selectedControl.current = null
+  }, [index])
+  useEffect(() => {
     if (focusLesson.current) {
       lessonHeading.current?.focus({ preventScroll: true })
       focusLesson.current = false
@@ -109,11 +127,12 @@ export default function KubernetesCourse({index,onIndexChange,passedLessons,onPa
     setSelected('')
     selectedControl.current = null
     setIndexOpen(false)
-    if (id === 'architecture') { onArchitecture(); return }
+    const nextTrack = activePath?.topics.some(topic => topic.id === id) ? activePath.id : undefined
+    if (id === 'architecture') { onArchitecture(nextTrack); return }
     const next = allLessons.findIndex(item => item.id === id)
     if (next < 0) throw new Error(`Unknown course topic: ${id}`)
     focusLesson.current = true
-    onIndexChange(next)
+    onIndexChange(next, nextTrack)
     window.scrollTo(0, 0)
   }
   function selectComponent(name: string) {
@@ -147,11 +166,12 @@ export default function KubernetesCourse({index,onIndexChange,passedLessons,onPa
         </div>
       </details>
       <section className="lesson-area">
-        <div className="lesson-copy"><p className="course-kicker"><Sparkles size={14}/>{currentChapter.title.toUpperCase()} · {String(currentPosition+1).padStart(2,'0')} / {String(orderedIds.length).padStart(2,'0')}</p><h1 ref={lessonHeading} tabIndex={-1}>{lesson.title}</h1><p className="lesson-description">{lesson.body}</p><div className="learning-takeaway"><BookOpen size={18}/><span><b>OPERATING PRINCIPLE</b>{lesson.takeaway}</span></div><div className="lesson-instruction"><CircleHelp size={17}/>{standardLesson || lesson.id === 'dns' || lesson.id === 'storage' ? 'Interact with the simulation; change a setting and observe the outcome.' : 'Explore each step of the walkthrough, then test your understanding below.'}</div>{lesson.id === 'services' && <button className="course-next practical-lesson-link" onClick={onPractical}>Practice in the simulated terminal <ArrowRight size={15}/></button>}{incidentTopics.includes(lesson.id) && <button className="course-back practical-lesson-link" onClick={() => onRelatedIncident(incidentTopics.indexOf(lesson.id))}>Practice a related incident <ArrowRight size={15}/></button>}</div>
-        <div className="visual-card topic-visual"><div className="visual-top"><span><Sparkles size={15}/> SYSTEMS / EXPLAINED</span><span className="demo-badge">K8S · {String(currentPosition+1).padStart(2,'0')}</span></div>{selected&&<div className="component-explanation"><div role="status"><b>{selected}</b><p>{describeSelection(selected)}</p></div><button type="button" onClick={closeExplanation} aria-label="Close component explanation">Close</button></div>}<motion.div key={lesson.id} className={`lesson-visual topic-lesson-visual topic-lesson-${lesson.id}`} initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} transition={{duration:.2}}>{Scene ? <Scene onSelect={selectComponent}/> : lesson.id === 'dns' ? <DiscoveryLab/> : lesson.id === 'storage' ? <StorageLab/> : <ExtendedLessonScene lesson={extendedLesson}/>}</motion.div><div className="visual-footer"><span><span className="legend-dot"/> SIMULATED CLUSTER</span><span>NO REAL INFRASTRUCTURE</span></div></div>
+        {activePath && <p className="course-path-context">Learning path: <b>{activePath.title}</b> · Topic {navigationPosition + 1} of {navigationIds.length}. Next and Previous follow this path.</p>}
+        <div className="lesson-copy"><p className="course-kicker"><Sparkles size={14}/>{currentChapter.title.toUpperCase()} · {String(currentPosition+1).padStart(2,'0')} / {String(orderedIds.length).padStart(2,'0')}</p><h1 ref={lessonHeading} tabIndex={-1}>{lesson.title}</h1><p className="lesson-description">{lesson.body}</p><div className="learning-takeaway"><BookOpen size={18}/><span><b>KEY IDEA</b>{lesson.takeaway}</span></div><div className="lesson-instruction"><CircleHelp size={17}/>Try the example: change a setting and see what happens.</div>{lesson.id === 'services' && <button className="course-next practical-lesson-link" onClick={onPractical}>Practice in the simulated terminal <ArrowRight size={15}/></button>}{incidentTopics.includes(lesson.id) && <button className="course-back practical-lesson-link" onClick={() => onRelatedIncident(incidentTopics.indexOf(lesson.id))}>Practice a related incident <ArrowRight size={15}/></button>}</div>
+        <div className="visual-card topic-visual"><div className="visual-top"><span><Sparkles size={15}/> SYSTEMS / EXPLAINED</span><span className="demo-badge">K8S · {String(currentPosition+1).padStart(2,'0')}</span></div>{selected&&<div className="component-explanation"><div role="status"><b>{selected}</b><p>{describeSelection(selected)}</p></div><button type="button" onClick={closeExplanation} aria-label="Close component explanation">Close</button></div>}<motion.div key={lesson.id} className={`lesson-visual topic-lesson-visual topic-lesson-${lesson.id}`} initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} transition={{duration:.2}}>{Scene ? <Scene onSelect={selectComponent}/> : <SpecializedScene/>}</motion.div><div className="visual-footer"><span><span className="legend-dot"/> SIMULATED CLUSTER</span><span>NO REAL INFRASTRUCTURE</span></div></div>
       </section>
       <LearningMaterials key={lesson.id} lessonId={lesson.id} extraMaterial={extendedLesson?.material} passed={passedLessons.has(lesson.id)} onPass={()=>onPass(lesson.id)}/>
-      <footer className="course-footer"><button className="course-back" onClick={()=>move(orderedIds[currentPosition-1])}><ChevronLeft size={17}/> Previous topic</button><span>TOPIC {String(currentPosition+1).padStart(2,'0')} / {String(orderedIds.length).padStart(2,'0')}</span><button className="course-next" onClick={()=>currentPosition===orderedIds.length-1 ? onComplete() : move(orderedIds[currentPosition+1])}>{currentPosition===orderedIds.length-1?'Start incident exercises':'Next topic'} <ChevronRight size={17}/></button></footer>
+      <footer className="course-footer"><button className="course-back" disabled={navigationPosition===0} onClick={()=>move(navigationIds[navigationPosition-1])}><ChevronLeft size={17}/> Previous topic</button><span>{activePath ? 'PATH TOPIC' : 'TOPIC'} {String(navigationPosition+1).padStart(2,'0')} / {String(navigationIds.length).padStart(2,'0')}</span><button className="course-next" onClick={()=>navigationPosition===navigationIds.length-1 ? activePath ? onDashboard() : onComplete() : move(navigationIds[navigationPosition+1])}>{navigationPosition===navigationIds.length-1 ? activePath ? 'Back to paths' : 'Start incident exercises' : 'Next topic'} <ChevronRight size={17}/></button></footer>
       <p className="course-safety"><ShieldCheck size={14}/> Interactive training simulation · no connection to a real cluster.</p>
       <p className="course-accessibility"><CircleHelp size={13}/> Explore the simulation, read the notes, then try the knowledge check. Passed checks are saved in this browser when storage is available.</p>
     </div>
