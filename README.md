@@ -15,13 +15,17 @@ Open `http://localhost:5173`. Build and preview with `npm run build` and `npm ru
 
 Start with the architecture map, then explore the foundation topics using their simulations, notes, and knowledge checks. Select a topic to revisit it or continue to guided or independent incident practice. Passed checks are saved in this browser's local storage when available; they do not sync across devices and can be removed by clearing site data. From the incident welcome screen, you can return to the lessons.
 
+Choose **Explore learning paths** for beginner, operator, and incident-response paths and a dashboard of passed checks, reviewed incidents, and the verified terminal exercise. It also tracks completed incident runs, guided runs, runs where an independent hint was revealed, and incorrect diagnosis submissions; unfinished runs are not counted. Paths recommend the first unchecked topic; the course's next/previous buttons still follow the full topic index. These records show activity, not certification or proof of mastery. The weekly challenge rotates through the existing incident library each Monday (UTC), and can be replayed without deadlines or streaks.
+
 Open **Explore the topic index** on any course lesson to browse chapters and nested subtopics or search concepts. Next and previous follow that chapter order. The learning path includes original walkthroughs covering cluster setup, namespaces, service discovery, storage, configuration, StatefulSets, the API, RBAC, security, and terminology alongside the existing simulations. The DNS and storage labs model specific examples, not real infrastructure; their assumptions are shown in the lesson. These lessons cover topics also found in Nigel Poulton's *The Kubernetes Book*, without reproducing the book. Consult the [Kubernetes documentation](https://kubernetes.io/docs/) for current, version-specific guidance.
 
 Concept maps advance through highlighted components and their explanations automatically; selecting a component or step pauses the walkthrough. Other illustrative paths explain the highlighted stage as their markers move. Use the pause and step controls to inspect them; these signals do not change workload settings. Automatic playback is disabled when the operating system requests reduced motion.
 
-In incident practice, investigate simulated evidence, diagnose the cause, and choose a recovery action. Guided mode includes prompts; in independent mode, use **Reveal hint** when needed. All cluster commands are simulated; no real cluster or credentials are used.
+In incident practice, investigate simulated evidence, diagnose the cause, and review a recovery action. Guided mode includes prompts; independent mode hides the incident title and detailed summary until diagnosis, and offers **Reveal hint**. The first incident models a recovery and verification; the others review an action without applying or verifying it. Related lessons link to incidents where available. All cluster commands are simulated; no real cluster or credentials are used.
 
 Includes 13 scenarios: OOMKilled, ImagePullBackOff, DNS failure, node memory and disk pressure, readiness/liveness probe failures, unreachable service, bad ingress, maxed HPA, expired TLS, stuck rollout, and Helm upgrade failure.
+
+The simulated terminal lab is available from the architecture introduction and the Services lesson. Type `help` to see the supported commands, investigate the Service selector, correct it, and inspect the Service again to verify its endpoint. This is a fixed browser-only exercise, not a real cluster or a general-purpose terminal; lab state resets when you leave or reset it.
 
 ## Icon attribution
 

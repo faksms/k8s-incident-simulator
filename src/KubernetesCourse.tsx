@@ -15,6 +15,7 @@ import LearningMaterials, { materials } from './LearningMaterials'
 import type { Material } from './LearningMaterials'
 import { ExtendedLessonScene, extendedLessons } from './ExtendedLessons'
 import { courseChapters, filterTopics, flattenTopics } from './courseCatalog'
+import { incidentTopics } from './App'
 import type { TopicNode } from './courseCatalog'
 import './lessons/CourseShell.css'
 import './CourseTypography.css'
@@ -73,7 +74,7 @@ function describeSelection(name:string) {
   return 'Inspect the simulation state and compare it with the field notes below to understand this component’s role.'
 }
 
-export default function KubernetesCourse({index,onIndexChange,passedLessons,onPass,onArchitecture,onComplete,onSkip}:{index:number;onIndexChange:(index:number)=>void;passedLessons:Set<string>;onPass:(id:string)=>void;onArchitecture:()=>void;onComplete:()=>void;onSkip:()=>void}) {
+export default function KubernetesCourse({index,onIndexChange,passedLessons,onPass,onArchitecture,onComplete,onSkip,onPractical,onDashboard,onRelatedIncident}:{index:number;onIndexChange:(index:number)=>void;passedLessons:Set<string>;onPass:(id:string)=>void;onArchitecture:()=>void;onComplete:()=>void;onSkip:()=>void;onPractical:()=>void;onDashboard:()=>void;onRelatedIncident:(index:number)=>void}) {
   const [selected,setSelected] = useState('')
   const [query, setQuery] = useState('')
   const [indexOpen, setIndexOpen] = useState(false)
@@ -132,7 +133,7 @@ export default function KubernetesCourse({index,onIndexChange,passedLessons,onPa
   }
 
   return <main className="course-page">
-    <header className="course-header"><div className="course-brand"><span className="course-logo"><Sparkles size={19}/></span><span><b>Kubernetes, visually</b><small>INTERACTIVE FOUNDATIONS · FIELD NOTES</small></span></div><div className="course-progress-label">CHECKS PASSED <b>{allLessons.filter(item=>passedLessons.has(item.id)).length + (passedLessons.has('architecture') ? 1 : 0)} / {allLessons.length + 1}</b></div><button className="course-skip" onClick={onSkip}>Incident exercises <ArrowRight size={15}/></button></header>
+    <header className="course-header"><div className="course-brand"><span className="course-logo"><Sparkles size={19}/></span><span><b>Kubernetes, visually</b><small>INTERACTIVE FOUNDATIONS · FIELD NOTES</small></span></div><div className="course-progress-label">CHECKS PASSED <b>{allLessons.filter(item=>passedLessons.has(item.id)).length + (passedLessons.has('architecture') ? 1 : 0)} / {allLessons.length + 1}</b></div><button className="course-skip" onClick={onDashboard}>Learning dashboard</button><button className="course-skip" onClick={onSkip}>Incident exercises <ArrowRight size={15}/></button></header>
     <div className="course-shell">
       <details className="topic-index" open={indexOpen} onToggle={event=>setIndexOpen(event.currentTarget.open)}>
         <summary><span><BookOpen size={18}/><b>Explore the topic index</b></span><small>{allLessons.length + 1} topics · Search and jump to a lesson</small></summary>
@@ -144,7 +145,7 @@ export default function KubernetesCourse({index,onIndexChange,passedLessons,onPa
         </div>
       </details>
       <section className="lesson-area">
-        <div className="lesson-copy"><p className="course-kicker"><Sparkles size={14}/>{currentChapter.title.toUpperCase()} · {String(currentPosition+1).padStart(2,'0')} / {String(orderedIds.length).padStart(2,'0')}</p><h1 ref={lessonHeading} tabIndex={-1}>{lesson.title}</h1><p className="lesson-description">{lesson.body}</p><div className="learning-takeaway"><BookOpen size={18}/><span><b>OPERATING PRINCIPLE</b>{lesson.takeaway}</span></div><div className="lesson-instruction"><CircleHelp size={17}/>{standardLesson || lesson.id === 'dns' || lesson.id === 'storage' ? 'Interact with the simulation; change a setting and observe the outcome.' : 'Explore each step of the walkthrough, then test your understanding below.'}</div></div>
+        <div className="lesson-copy"><p className="course-kicker"><Sparkles size={14}/>{currentChapter.title.toUpperCase()} · {String(currentPosition+1).padStart(2,'0')} / {String(orderedIds.length).padStart(2,'0')}</p><h1 ref={lessonHeading} tabIndex={-1}>{lesson.title}</h1><p className="lesson-description">{lesson.body}</p><div className="learning-takeaway"><BookOpen size={18}/><span><b>OPERATING PRINCIPLE</b>{lesson.takeaway}</span></div><div className="lesson-instruction"><CircleHelp size={17}/>{standardLesson || lesson.id === 'dns' || lesson.id === 'storage' ? 'Interact with the simulation; change a setting and observe the outcome.' : 'Explore each step of the walkthrough, then test your understanding below.'}</div>{lesson.id === 'services' && <button className="course-next practical-lesson-link" onClick={onPractical}>Practice in the simulated terminal <ArrowRight size={15}/></button>}{incidentTopics.includes(lesson.id) && <button className="course-back practical-lesson-link" onClick={() => onRelatedIncident(incidentTopics.indexOf(lesson.id))}>Practice a related incident <ArrowRight size={15}/></button>}</div>
         <div className="visual-card topic-visual"><div className="visual-top"><span><Sparkles size={15}/> SYSTEMS / EXPLAINED</span><span className="demo-badge">K8S · {String(currentPosition+1).padStart(2,'0')}</span></div>{selected&&<div className="component-explanation"><div role="status"><b>{selected}</b><p>{describeSelection(selected)}</p></div><button type="button" onClick={closeExplanation} aria-label="Close component explanation">Close</button></div>}<motion.div key={lesson.id} className={`lesson-visual topic-lesson-visual topic-lesson-${lesson.id}`} initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} transition={{duration:.2}}>{Scene ? <Scene onSelect={selectComponent}/> : lesson.id === 'dns' ? <DiscoveryLab/> : lesson.id === 'storage' ? <StorageLab/> : <ExtendedLessonScene lesson={extendedLesson}/>}</motion.div><div className="visual-footer"><span><span className="legend-dot"/> SIMULATED CLUSTER</span><span>NO REAL INFRASTRUCTURE</span></div></div>
       </section>
       <LearningMaterials key={lesson.id} lessonId={lesson.id} extraMaterial={extendedLesson?.material} passed={passedLessons.has(lesson.id)} onPass={()=>onPass(lesson.id)}/>

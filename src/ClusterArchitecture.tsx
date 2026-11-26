@@ -65,7 +65,7 @@ const componentInfo: Record<string, string> = {
   'Client': 'An application client sends traffic to a Service virtual IP; the Service data plane forwards it to a ready endpoint.',
 }
 
-export default function ClusterArchitecture({ onComplete, passed, onPass }: { onComplete: () => void; passed: boolean; onPass: () => void }) {
+export default function ClusterArchitecture({ onComplete, onPractical, onDashboard, passed, onPass }: { onComplete: () => void; onPractical: () => void; onDashboard: () => void; passed: boolean; onPass: () => void }) {
   const reducedMotion = useReducedMotion()
   const [phase, setPhase] = useState(0)
   const [playing, setPlaying] = useState(() => !reducedMotion)
@@ -230,7 +230,7 @@ export default function ClusterArchitecture({ onComplete, passed, onPass }: { on
 
       <section className="beginner-guide" aria-label="Getting started">
         <div><b>First, the basics</b><p>A <strong>container</strong> packages an application. A <strong>Pod</strong> is the unit Kubernetes runs; a <strong>node</strong> is a computer that runs Pods. A <strong>cluster</strong> is the group of computers managed together.</p></div>
-        <div><b>How to learn here</b><p>Choose a step or press Play, select components to learn what they do, and try the practice task and knowledge check below. Continue whenever you are ready.</p></div>
+        <div><b>How to learn here</b><p>Choose a step or press Play, select components to learn what they do, and try the practice task and knowledge check below. Continue whenever you are ready.</p><div className="architecture-learning-actions"><button className="architecture-skip" onClick={onDashboard}>Explore learning paths <ArrowRight size={16}/></button><button className="architecture-skip" onClick={onPractical}>Try the simulated terminal lab <ArrowRight size={16}/></button></div></div>
       </section>
 
       <section className="architecture-board" aria-label="Interactive Kubernetes architecture diagram">
