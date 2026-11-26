@@ -29,7 +29,7 @@ Each topic includes an interactive example tailored to its concept. Change setti
 
 The architecture page offers an isometric cluster experiment alongside the original workflow map. In its simplified outage example, existing Service traffic may continue when the API is unreachable only if the data plane retains usable configuration and the selected backends are usable. The angle control changes the illustration; it is not a real cluster or a full 3D environment.
 
-The Services lesson includes a traffic experiment: adjust incoming demand, estimated capacity, and Pod readiness or labels. Its equal-distribution, fixed-capacity calculation is an illustration, not a benchmark, measured cluster traffic, or a guarantee of how Kubernetes forwards connections.
+The Services lesson includes a traffic experiment: adjust incoming demand, estimated capacity, and Pod readiness or labels. Its equal-distribution, fixed-capacity calculation is an illustration, not a benchmark, measured cluster traffic, or a guarantee of how Kubernetes forwards connections. Its visual guide also explores Pod replacement, selector matching and readiness, EndpointSlices, Service access types, and a selectable YAML-to-network breakdown; the field notes include a matching manifest and inspection workflow.
 
 The Service types and Gateway examples show the selected request path; the namespace, scheduling, StatefulSet, operator, security, and terminology examples show their own state changes. The Helm/Kustomize preview is an abbreviated manifest, not an applied resource.
 

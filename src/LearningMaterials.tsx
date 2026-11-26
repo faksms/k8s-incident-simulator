@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { BookOpen, Check, CircleCheck, Clipboard, Terminal } from 'lucide-react'
 import { deploymentExampleManifest } from './lessons/deploymentManifest'
+import { serviceExampleManifest } from './lessons/serviceManifest'
 import './LearningMaterials.css'
 import './LearningMaterialsPolish.css'
 
@@ -108,9 +109,30 @@ kubectl delete service/web deployment/web`,
       { term: 'Selectors and labels', detail: 'A Service uses a selector to find Pods with matching labels. If the labels do not match, those Pods are not selected.' },
       { term: 'Readiness', detail: 'A matching Pod normally needs to be Ready before it receives regular Service traffic. The readiness check should reflect whether the app can serve requests.' },
       { term: 'Ports', detail: 'The Service port is where clients connect. targetPort is the Pod port where the app should be listening. A wrong targetPort can prevent requests from working.' },
+      { term: 'EndpointSlices', detail: 'For selector-based Services, Kubernetes maintains EndpointSlices with backend addresses and readiness conditions. The data plane uses endpoint information to forward traffic; packets do not travel through the EndpointSlice API object. Legacy Endpoints are deprecated in newer Kubernetes versions.' },
+      { term: 'DNS discovery', detail: 'Cluster DNS normally resolves a Service name to its ClusterIP. A fully qualified name includes the namespace, for example api.default.svc.cluster.local when the cluster domain is cluster.local. Service environment variables are populated when a Pod starts and do not reflect Services created later.' },
+      { term: 'Access types', detail: 'ClusterIP is internal by default. NodePort adds a port on nodes, subject to network access. LoadBalancer requests a load balancer from a compatible provider or controller; its address and availability depend on that environment.' },
+      { term: 'Creating and inspecting', detail: 'A declarative manifest records the desired Service configuration. Imperative commands can create a Service quickly, but live changes can diverge from your source manifest. Check the Service, Pod labels and readiness, EndpointSlices, and the application listening port together.' },
     ],
-    exampleLabel: 'SERVICE SELECTOR AND PORT MAPPING',
-    example: 'apiVersion: v1\nkind: Service\nmetadata:\n  name: api\nspec:\n  selector:\n    app: api\n  ports:\n    - name: http\n      port: 80\n      targetPort: 8080',
+    exampleLabel: 'DECLARATIVE NODEPORT SERVICE MANIFEST',
+    example: serviceExampleManifest,
+    commandsLabel: 'CREATE, INSPECT, AND CLEAN UP',
+    commands: `# Real-cluster commands: check your context and namespace first.
+# This Service needs a workload in your namespace whose Pods have
+# app=api AND tier=frontend and an application listening on TCP 8080.
+# Save the manifest above as service.yaml before applying.
+kubectl apply -f service.yaml
+kubectl get service api -o wide
+kubectl describe service api
+kubectl get pods -l app=api,tier=frontend -o wide --show-labels
+kubectl get endpointslices -l kubernetes.io/service-name=api
+kubectl describe endpointslices -l kubernetes.io/service-name=api
+# An alternative imperative example requires an existing deployment named api;
+# inspect its generated selector and ports before using it.
+kubectl expose deployment api --name=api-imperative --type=NodePort --port=80 --target-port=8080
+kubectl describe service api-imperative
+# Delete only these Services in a disposable exercise; workloads remain.
+kubectl delete service api api-imperative`,
     question: 'The Service has no endpoints, but its Pods are running. What should you check first?',
     options: ['Whether the Service selector matches Pod labels and Pods are Ready', 'Whether the Pods use hostNetwork', 'Whether the Deployment has a public LoadBalancer address'],
     answer: 0,

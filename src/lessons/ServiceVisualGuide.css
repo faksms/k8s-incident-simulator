@@ -1,0 +1,56 @@
+.svc-guide { margin: 18px 0; padding: clamp(14px, 2.4vw, 28px); border: 1px solid #345b73; border-radius: 12px; background: radial-gradient(circle at 90% 0, #263c60, transparent 38%), #0d1929; color: #dce7f3; }
+.svc-guide-header, .svc-panel-title { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.svc-guide-header p, .svc-panel-title p { margin: 0 0 7px; color: #81e3c2; font: 700 10px 'IBM Plex Mono', monospace; letter-spacing: .08em; }
+.svc-guide-header h2 { margin: 0; font: 600 clamp(20px, 2.2vw, 28px) 'Space Grotesk', sans-serif; }
+.svc-guide-header span { display: block; margin-top: 8px; color: #b6c7d7; font-size: 13px; line-height: 1.6; }
+.svc-guide button { cursor: pointer; }
+.svc-guide-header button, .svc-controls button, .svc-types button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 9px 12px; border: 1px solid #528c8b; border-radius: 7px; background: #193a3e; color: #c9f8ea; font-size: 12px; }
+.svc-guide button:focus-visible { outline: 2px solid #9deafa; outline-offset: 2px; }
+.svc-panel { margin-top: 16px; padding: clamp(14px, 2vw, 20px); border: 1px solid #34516a; border-radius: 10px; background: #101e30; }
+.svc-panel-title h3 { margin: 0; color: #f0f8ff; font: 600 19px 'Space Grotesk', sans-serif; }
+.svc-panel-title svg { flex: none; color: #7edfe3; }
+.svc-path, .svc-type-path { display: grid; grid-template-columns: minmax(0, 1fr) 32px minmax(0, 1fr) 32px minmax(0, 1.1fr); align-items: center; margin: 18px 0; }
+.svc-node, .svc-type-path > div { display: grid; align-content: center; justify-items: center; gap: 6px; min-height: 120px; padding: 10px; border: 1px solid #55708c; border-radius: 9px; background: #1c3048; text-align: center; overflow-wrap: anywhere; }
+.svc-node svg { color: #91c9ff; }
+.svc-node b, .svc-type-path b { color: #f0f8ff; font-size: 13px; }
+.svc-node small, .svc-type-path small { color: #bed0dc; font: 10px/1.5 'IBM Plex Mono', monospace; }
+.svc-front { border-color: #62c5d3; background: #123849; }
+.svc-front svg { color: #7de8e5; }
+.svc-pod { border-color: #6acb91; background: #153a30; }
+.svc-pod svg { color: #90e7b5; }
+.svc-pod.unavailable { border-color: #c98276; background: #402b30; }
+.svc-pod.unavailable svg { color: #ffb09c; }
+.svc-arrow { position: relative; height: 2px; background: #526477; }
+.svc-arrow.active { background: #69d9c2; }
+.svc-arrow.active i { position: absolute; top: -3px; width: 8px; height: 8px; border-radius: 50%; background: #ffda84; box-shadow: 0 0 10px #ffda84; animation: svc-packet 1.8s linear infinite; }
+.svc-endpoints { display: grid; gap: 5px; padding: 12px; border: 1px solid #7d6caf; border-radius: 8px; background: #28233d; color: #e4dbff; font-size: 12px; line-height: 1.5; }
+.svc-endpoints span { color: #d1c9e6; }
+.svc-controls, .svc-types { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.svc-controls button[aria-pressed="false"] { border-color: #d28c7f; background: #422c31; color: #ffd1c6; }
+.svc-note { margin: 13px 0 0; color: #b2c5d4; font-size: 12px; line-height: 1.65; }
+.svc-blueprint { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 16px; margin-top: 16px; }
+.svc-code { align-self: start; overflow-x: auto; padding: 6px; border: 1px solid #34516a; border-radius: 8px; background: #091321; }
+.svc-code-heading { padding: 9px; color: #a7dcd5; font: 700 10px 'IBM Plex Mono', monospace; }
+.svc-code button { display: block; width: 100%; min-width: max-content; padding: 5px 10px; border: 1px solid transparent; border-left: 3px solid transparent; border-radius: 5px; background: transparent; color: #c2d0dc; text-align: left; }
+.svc-code button code { white-space: pre; font: 12px/1.6 'IBM Plex Mono', monospace; }
+.svc-code button.selected { border-color: #459c91; border-left-color: #74efc8; background: #173c3d; color: white; }
+.svc-field-map { display: grid; align-content: start; gap: 8px; }
+.svc-field { display: grid; gap: 4px; padding: 11px 13px; border: 1px solid #49677f; border-radius: 8px; background: #1a2c43; color: #e5f1fb; text-align: left; }
+.svc-field span { color: #bfcedb; font-size: 11px; }
+.svc-field.selected { border-color: #78ebd0; box-shadow: 0 0 16px #59dbc344; }
+.svc-field-type { background: #292744; }.svc-field-selector { background: #173b34; }.svc-field-ports { background: #3a3028; }
+.svc-detail { padding: 13px; border-left: 3px solid #79e1c4; border-radius: 6px; background: #163a3a; color: #e7fbf4; font-size: 13px; line-height: 1.6; }
+.svc-detail p { margin: 5px 0 0; color: #c8dfe2; }
+.svc-types button[aria-pressed="true"] { border-color: #88f0d7; background: #276258; color: white; }
+.svc-type-path > div { min-height: 76px; border-color: #796ab0; background: #292744; }
+.svc-type-description { margin: 0; color: #dce8f1; font-size: 13px; line-height: 1.6; }
+@keyframes svc-packet { from { left: 0; } to { left: calc(100% - 8px); } }
+@media (max-width: 700px) {
+  .svc-blueprint { grid-template-columns: 1fr; }
+  .svc-path, .svc-type-path { grid-template-columns: 1fr; }
+  .svc-node { min-height: 90px; }
+  .svc-arrow { justify-self: center; width: 2px; height: 25px; }
+  .svc-arrow.active i { top: 0; left: -3px; animation-name: svc-packet-vertical; }
+  @keyframes svc-packet-vertical { from { top: 0; } to { top: calc(100% - 8px); } }
+}
+@media (prefers-reduced-motion: reduce) { .svc-arrow.active i { animation: none; } }

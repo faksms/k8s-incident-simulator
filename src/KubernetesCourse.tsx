@@ -7,6 +7,7 @@ import ProbesLesson from './lessons/ProbesLesson'
 import DeploymentLesson from './lessons/DeploymentLesson'
 import DeploymentVisualGuide from './lessons/DeploymentVisualGuide'
 import ServiceLesson from './lessons/ServiceLesson'
+import ServiceVisualGuide from './lessons/ServiceVisualGuide'
 import TrafficLesson from './lessons/TrafficLesson'
 import TopologyLesson from './lessons/TopologyLesson'
 import ResourceQuotaLesson from './lessons/ResourceQuotaLesson'
@@ -173,6 +174,7 @@ export default function KubernetesCourse({index,track,onIndexChange,passedLesson
         <div className="visual-card topic-visual"><div className="visual-top"><span><Sparkles size={15}/> SYSTEMS / EXPLAINED</span><span className="demo-badge">K8S · {String(currentPosition+1).padStart(2,'0')}</span></div>{selected&&<div className="component-explanation"><div role="status"><b>{selected}</b><p>{describeSelection(selected)}</p></div><button type="button" onClick={closeExplanation} aria-label="Close component explanation">Close</button></div>}<motion.div key={lesson.id} className={`lesson-visual topic-lesson-visual topic-lesson-${lesson.id}`} initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} transition={{duration:.2}}>{Scene ? <Scene onSelect={selectComponent}/> : <SpecializedScene/>}</motion.div><div className="visual-footer"><span><span className="legend-dot"/> SIMULATED CLUSTER</span><span>NO REAL INFRASTRUCTURE</span></div></div>
       </section>
       {lesson.id === 'deployments' && <DeploymentVisualGuide/>}
+      {lesson.id === 'services' && <ServiceVisualGuide/>}
       {lesson.id === 'terminology' && <TerminologyGuide onTopic={move}/>}
       <LearningMaterials key={lesson.id} lessonId={lesson.id} extraMaterial={extendedLesson?.material} passed={passedLessons.has(lesson.id)} onPass={()=>onPass(lesson.id)}/>
       <footer className="course-footer"><button className="course-back" disabled={navigationPosition===0} onClick={()=>move(navigationIds[navigationPosition-1])}><ChevronLeft size={17}/> Previous topic</button><span>{activePath ? 'PATH TOPIC' : 'TOPIC'} {String(navigationPosition+1).padStart(2,'0')} / {String(navigationIds.length).padStart(2,'0')}</span><button className="course-next" onClick={()=>navigationPosition===navigationIds.length-1 ? activePath ? onDashboard() : onComplete() : move(navigationIds[navigationPosition+1])}>{navigationPosition===navigationIds.length-1 ? activePath ? 'Back to paths' : 'Start incident exercises' : 'Next topic'} <ChevronRight size={17}/></button></footer>
