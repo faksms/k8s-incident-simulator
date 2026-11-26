@@ -2,15 +2,9 @@ import { useState } from 'react'
 import { Box, FileCode2, Globe, Network, RotateCcw } from 'lucide-react'
 import { serviceManifestSections } from './serviceManifest'
 import type { ServiceField } from './serviceManifest'
+import ServiceAccessDiagram, { exposureDetails } from './ServiceAccessDiagram'
+import type { Exposure } from './ServiceAccessDiagram'
 import './ServiceVisualGuide.css'
-
-type Exposure = 'ClusterIP' | 'NodePort' | 'LoadBalancer'
-
-const exposureDetails: Record<Exposure, { origin: string; entry: string; description: string }> = {
-  ClusterIP: { origin: 'Inside cluster', entry: 'DNS → ClusterIP :80', description: 'The default type provides an internal virtual IP. External clients need another entry point.' },
-  NodePort: { origin: 'Outside client', entry: 'Reachable node :30080', description: 'A NodePort adds a port on nodes. Reachability, firewall rules, and the configured port range still matter; traffic can reach a Pod on another node.' },
-  LoadBalancer: { origin: 'Outside client', entry: 'Load balancer :80', description: 'A compatible provider or controller must provision the load balancer. Its address can be pending, private, or public depending on the environment, and may incur costs.' },
-}
 
 export default function ServiceVisualGuide() {
   const [field, setField] = useState<ServiceField>('identity')
@@ -68,12 +62,8 @@ export default function ServiceVisualGuide() {
     <section className="svc-panel" aria-labelledby="svc-types-title">
       <div className="svc-panel-title"><div><p>03 · ACCESS PATHS</p><h3 id="svc-types-title">Choose how clients reach the app</h3></div><Globe aria-hidden="true"/></div>
       <div className="svc-types" aria-label="Service exposure types">{(Object.keys(exposureDetails) as Exposure[]).map(type => <button type="button" key={type} aria-pressed={exposure === type} onClick={() => setExposure(type)}>{type}</button>)}</div>
-      <div className="svc-type-path" aria-label={`${exposure} example request path`}>
-        <div><b>{exposureDetails[exposure].origin}</b><small>client</small></div><span className="svc-arrow active" aria-hidden="true"><i/></span>
-        <div><b>{exposureDetails[exposure].entry}</b><small>entry point</small></div><span className="svc-arrow active" aria-hidden="true"><i/></span>
-        <div><b>Service → Ready Pod</b><small>:80 → :8080</small></div>
-      </div>
-      <p className="svc-type-description" role="status" aria-live="polite"><b>{exposure}:</b> {exposureDetails[exposure].description}</p>
+      <ServiceAccessDiagram exposure={exposure}/>
+      <p className="svc-type-description" role="status" aria-live="polite"><b>{exposure}:</b> {exposureDetails[exposure]}</p>
       <p className="svc-note">These are alternative simplified examples, not changes to the YAML above. Cluster DNS normally resolves a Service name to its ClusterIP; short names depend on the caller’s namespace and DNS search configuration. Service environment variables reflect Services available when the Pod starts and can become stale. A Service alone does not guarantee application availability or equal request distribution.</p>
     </section>
   </section>
