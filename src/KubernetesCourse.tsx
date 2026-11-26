@@ -79,6 +79,7 @@ export default function KubernetesCourse({index,onIndexChange,passedLessons,onPa
   const [indexOpen, setIndexOpen] = useState(false)
   const lessonHeading = useRef<HTMLHeadingElement>(null)
   const focusLesson = useRef(false)
+  const selectedControl = useRef<HTMLElement | null>(null)
   const lesson = allLessons[index]
   const standardLesson = lessons[index]
   const extendedLesson = extendedLessons[index - lessons.length]
@@ -103,6 +104,7 @@ export default function KubernetesCourse({index,onIndexChange,passedLessons,onPa
   }, [index, indexOpen])
   function move(id: string) {
     setSelected('')
+    selectedControl.current = null
     setIndexOpen(false)
     if (id === 'architecture') { onArchitecture(); return }
     const next = allLessons.findIndex(item => item.id === id)
@@ -110,6 +112,16 @@ export default function KubernetesCourse({index,onIndexChange,passedLessons,onPa
     focusLesson.current = true
     onIndexChange(next)
     window.scrollTo(0, 0)
+  }
+  function selectComponent(name: string) {
+    const active = document.activeElement
+    selectedControl.current = active instanceof HTMLElement && active.closest('.lesson-visual') ? active : null
+    setSelected(name)
+  }
+  function closeExplanation() {
+    selectedControl.current?.focus({ preventScroll: true })
+    selectedControl.current = null
+    setSelected('')
   }
   function renderTopics(nodes: TopicNode[]) {
     return <ul>{nodes.map(node => {
@@ -132,8 +144,8 @@ export default function KubernetesCourse({index,onIndexChange,passedLessons,onPa
         </div>
       </details>
       <section className="lesson-area">
-        <div className="lesson-copy"><p className="course-kicker"><Sparkles size={14}/>{currentChapter.title.toUpperCase()} · {String(currentPosition+1).padStart(2,'0')} / {String(orderedIds.length).padStart(2,'0')}</p><h1 ref={lessonHeading} tabIndex={-1}>{lesson.title}</h1><p className="lesson-description">{lesson.body}</p><div className="learning-takeaway"><BookOpen size={18}/><span><b>OPERATING PRINCIPLE</b>{lesson.takeaway}</span></div><div className="lesson-instruction"><CircleHelp size={17}/>{standardLesson || lesson.id === 'dns' || lesson.id === 'storage' ? 'Interact with the simulation; change a setting and observe the outcome.' : 'Explore each step of the walkthrough, then test your understanding below.'}</div>{selected&&<div className="component-explanation"><b>{selected}</b><p>{describeSelection(selected)}</p></div>}</div>
-        <div className="visual-card topic-visual"><div className="visual-top"><span><Sparkles size={15}/> SYSTEMS / EXPLAINED</span><span className="demo-badge">K8S · {String(currentPosition+1).padStart(2,'0')}</span></div><motion.div key={lesson.id} className={`lesson-visual topic-lesson-visual topic-lesson-${lesson.id}`} initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} transition={{duration:.2}}>{Scene ? <Scene onSelect={setSelected}/> : lesson.id === 'dns' ? <DiscoveryLab/> : lesson.id === 'storage' ? <StorageLab/> : <ExtendedLessonScene lesson={extendedLesson}/>}</motion.div><div className="visual-footer"><span><span className="legend-dot"/> SIMULATED CLUSTER</span><span>NO REAL INFRASTRUCTURE</span></div></div>
+        <div className="lesson-copy"><p className="course-kicker"><Sparkles size={14}/>{currentChapter.title.toUpperCase()} · {String(currentPosition+1).padStart(2,'0')} / {String(orderedIds.length).padStart(2,'0')}</p><h1 ref={lessonHeading} tabIndex={-1}>{lesson.title}</h1><p className="lesson-description">{lesson.body}</p><div className="learning-takeaway"><BookOpen size={18}/><span><b>OPERATING PRINCIPLE</b>{lesson.takeaway}</span></div><div className="lesson-instruction"><CircleHelp size={17}/>{standardLesson || lesson.id === 'dns' || lesson.id === 'storage' ? 'Interact with the simulation; change a setting and observe the outcome.' : 'Explore each step of the walkthrough, then test your understanding below.'}</div></div>
+        <div className="visual-card topic-visual"><div className="visual-top"><span><Sparkles size={15}/> SYSTEMS / EXPLAINED</span><span className="demo-badge">K8S · {String(currentPosition+1).padStart(2,'0')}</span></div>{selected&&<div className="component-explanation"><div role="status"><b>{selected}</b><p>{describeSelection(selected)}</p></div><button type="button" onClick={closeExplanation} aria-label="Close component explanation">Close</button></div>}<motion.div key={lesson.id} className={`lesson-visual topic-lesson-visual topic-lesson-${lesson.id}`} initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} transition={{duration:.2}}>{Scene ? <Scene onSelect={selectComponent}/> : lesson.id === 'dns' ? <DiscoveryLab/> : lesson.id === 'storage' ? <StorageLab/> : <ExtendedLessonScene lesson={extendedLesson}/>}</motion.div><div className="visual-footer"><span><span className="legend-dot"/> SIMULATED CLUSTER</span><span>NO REAL INFRASTRUCTURE</span></div></div>
       </section>
       <LearningMaterials key={lesson.id} lessonId={lesson.id} extraMaterial={extendedLesson?.material} passed={passedLessons.has(lesson.id)} onPass={()=>onPass(lesson.id)}/>
       <footer className="course-footer"><button className="course-back" onClick={()=>move(orderedIds[currentPosition-1])}><ChevronLeft size={17}/> Previous topic</button><span>TOPIC {String(currentPosition+1).padStart(2,'0')} / {String(orderedIds.length).padStart(2,'0')}</span><button className="course-next" onClick={()=>currentPosition===orderedIds.length-1 ? onComplete() : move(orderedIds[currentPosition+1])}>{currentPosition===orderedIds.length-1?'Start incident exercises':'Next topic'} <ChevronRight size={17}/></button></footer>

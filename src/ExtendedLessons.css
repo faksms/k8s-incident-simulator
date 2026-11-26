@@ -61,6 +61,11 @@
 .explore-actions button:last-child { border-color: #62cda9; color: #a6f1d2; }
 .topic-index :is(summary, button):focus-visible, .explore-scene button:focus-visible { outline: 2px solid #65d8e6; outline-offset: 3px; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+@media (min-width: 621px) {
+  .explore-diagram { display: grid; grid-template-columns: minmax(0, 1fr) clamp(55px, 6vw, 82px) minmax(0, 1fr) clamp(55px, 6vw, 82px) minmax(0, 1fr); }
+  .explore-diagram-part { display: contents; }
+  .explore-link { min-width: 0; padding: 0 4px; }
+}
 @media (max-width: 620px) {
   .topic-index .course-steps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .chapter-index { grid-template-columns: minmax(0, 1fr); }
