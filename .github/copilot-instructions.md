@@ -7,6 +7,12 @@
 - Keep each lesson simulation specific to the Kubernetes concept it teaches. Prefer a meaningful learner action that changes modeled state and explains the result over static status cards or toggles that do not affect the example.
 - Do not impose one visual layout or animation technique on every topic. Use SVG paths and moving packets for concepts that genuinely describe a flow; use stateful diagrams, controls, timelines, or other existing patterns when they teach the concept better. Match the surrounding lesson rather than adding a separate HUD, recording mode, or palette by default.
 
+## PDF-based lessons
+
+- When adapting a topic from a user-provided PDF, review the entire relevant section, including its diagrams, and cover its important high-level concepts rather than only the text or a few examples.
+- Turn useful source illustrations into original, colorful, live animated and interactive explanations suited to the topic. For example, show resource relationships and let learners change a scenario to see the resulting state, rather than copying a static picture.
+- When the source includes YAML or configuration, provide an interactive breakdown that links meaningful fields to the resources or behavior they control. Keep the example and its explanation consistent, and label simplifications.
+
 ## Interactive simulations
 
 - Make controls functional and observable: learner actions should update the modeled resources, relationships, outcomes, or event explanation. Include a clear way to replay or reset multi-step interactions when appropriate.

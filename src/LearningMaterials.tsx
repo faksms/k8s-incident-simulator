@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { BookOpen, Check, CircleCheck, Clipboard, Terminal } from 'lucide-react'
+import { deploymentExampleManifest } from './lessons/deploymentManifest'
 import './LearningMaterials.css'
 import './LearningMaterialsPolish.css'
 
@@ -9,6 +10,8 @@ export type Material = {
   concepts: { term: string; detail: string }[]
   exampleLabel: string
   example: string
+  commandsLabel?: string
+  commands?: string
   question: string
   options: string[]
   answer: number
@@ -53,16 +56,45 @@ export const materials: Record<string, Material> = {
     explanation: 'Containers in the same Pod share a network, so they can talk using localhost. They must not try to use the same listening port at the same time.',
   },
   deployments: {
-    title: 'App copies, updates, and recovery',
-    objective: 'See how a Deployment keeps the requested number of app copies and rolls out updates.',
+    title: 'Deployments: desired state, updates, and recovery',
+    objective: 'Declare an app and replica target, watch controllers reconcile it, then roll out or undo a Pod-template update.',
     concepts: [
-      { term: 'Desired state', detail: 'A Deployment describes the app Pod and how many copies you want. Its controller keeps checking the cluster against that goal.' },
-      { term: 'ReplicaSet', detail: 'A Deployment uses ReplicaSets to keep the requested number of Pods running. If a Pod is deleted, the ReplicaSet creates a new Pod; it does not repair the old one.' },
-      { term: 'Rolling update', detail: 'An update can replace old Pods gradually. Readiness and update settings affect how many are available while the change happens.' },
-      { term: 'Rollback', detail: 'A rollback can restore an earlier Pod template. It does not undo changes outside the Deployment, such as database migrations.' },
+      { term: 'Desired state and reconciliation', detail: 'The Deployment spec declares a Pod template and replica target. Controllers repeatedly observe actual state, compare it with that target, and take action; reconciliation is ongoing, not a one-time command.' },
+      { term: 'ReplicaSet and self-healing', detail: 'A Deployment creates and manages ReplicaSets, which keep the requested number of matching Pods. If a Pod disappears, the ReplicaSet creates a new Pod with a new identity; it cannot repair the deleted Pod. A matching count does not guarantee app health.' },
+      { term: 'Scaling and scheduling', detail: 'Changing spec.replicas changes the target. Controllers request more or fewer Pods, while the scheduler places new Pods when suitable capacity is available. Quotas, placement rules, or resource requests can leave Pods Pending.' },
+      { term: 'Rolling update', detail: 'Changing the Pod template creates a new ReplicaSet. The Deployment replaces Pods gradually; readiness and maxSurge/maxUnavailable influence how many copies remain available. A rollout can stall if new Pods cannot become Ready.' },
+      { term: 'Rollback and history', detail: 'A rollback restores an earlier Pod template recorded in rollout history. It does not reverse database migrations, external configuration, or other changes outside the Deployment.' },
+      { term: 'Inspect the workload', detail: 'Check the Deployment, its ReplicaSets, Pods, events, and rollout status together. A desired/ready mismatch is a clue to inspect scheduling, image pulls, probes, and events.' },
+      { term: 'Service and cleanup', detail: 'A Deployment does not provide a stable network address. A Service selects matching Pod labels and gives clients a stable endpoint; remove both resources when the exercise is finished.' },
+      { term: 'Declarative and imperative changes', detail: 'A manifest describes the intended configuration; kubectl scale or rollout undo changes the live object directly. Update your source manifest after an imperative change or a later apply or GitOps sync may restore the old settings. A Deployment can continue reconciling after either kind of change.' },
+      { term: 'Availability and compatibility', detail: 'A rolling update is not a guarantee of zero downtime. Sufficient capacity, readiness checks, client compatibility across versions, and safe handling of shared data all matter.' },
     ],
-    exampleLabel: 'INSPECT AND UNDO A ROLLOUT',
-    example: 'kubectl rollout status deployment/web\nkubectl rollout history deployment/web\nkubectl rollout undo deployment/web\nkubectl get rs,pods -l app=web',
+    exampleLabel: 'DECLARATIVE DEPLOYMENT MANIFEST',
+    example: deploymentExampleManifest,
+    commandsLabel: 'APPLY, INSPECT, UPDATE, AND CLEAN UP',
+    commands: `# Real-cluster commands: check your context and namespace first.
+# Save the manifest above as deployment.yaml before applying.
+kubectl apply -f deployment.yaml
+kubectl get deployment,replicasets,pods -l app=web
+kubectl get pods -l app=web -w
+# Stop watching with Ctrl+C before running the next command.
+kubectl describe deployment web
+kubectl get pods -l app=web --show-labels
+kubectl rollout status deployment/web
+kubectl expose deployment/web --name=web --port=80 --target-port=80
+kubectl get service/web
+kubectl get endpointslices -l kubernetes.io/service-name=web
+# An imperative scale or image change can differ from deployment.yaml.
+kubectl scale deployment/web --replicas=4
+kubectl set image deployment/web web=nginx:1.28
+kubectl rollout pause deployment/web
+kubectl rollout resume deployment/web
+kubectl rollout history deployment/web
+kubectl rollout undo deployment/web
+kubectl rollout status deployment/web
+# Update your manifest to match the intended final state.
+# Cleanup deletes these resources; use only in a disposable exercise.
+kubectl delete service/web deployment/web`,
     question: 'A Pod managed by a Deployment is deleted. What should happen next?',
     options: ['The deleted Pod is repaired in place', 'The ReplicaSet creates a replacement to move toward the replica target', 'The scheduler increases the Deployment replica count'],
     answer: 1,
@@ -170,16 +202,17 @@ export const materials: Record<string, Material> = {
 export default function LearningMaterials({ lessonId, passed, onPass, extraMaterial }: { lessonId: string; passed: boolean; onPass: () => void; extraMaterial?: Material }) {
   const material = extraMaterial ?? materials[lessonId]
   const [selected, setSelected] = useState<number | null>(null)
-  const [copied, setCopied] = useState(false)
+  const [copied, setCopied] = useState<'example' | 'commands' | null>(null)
   const [copyError, setCopyError] = useState(false)
+  const commands = material.commands
 
-  async function copyExample() {
+  async function copyContent(content: string, section: 'example' | 'commands') {
     try {
-      await navigator.clipboard.writeText(material.example)
-      setCopied(true)
+      await navigator.clipboard.writeText(content)
+      setCopied(section)
       setCopyError(false)
     } catch {
-      setCopied(false)
+      setCopied(null)
       setCopyError(true)
     }
   }
@@ -192,7 +225,9 @@ export default function LearningMaterials({ lessonId, passed, onPass, extraMater
   return <section className="learning-materials" aria-labelledby="materials-title">
     <header className="materials-heading"><div><p>FIELD NOTES · {lessonId.toUpperCase()}</p><h2 id="materials-title">{material.title}</h2><span>{material.objective}</span></div><BookOpen size={22}/></header>
     <div className="materials-concepts">{material.concepts.map(item => <article key={item.term}><h3>{item.term}</h3><p>{item.detail}</p></article>)}</div>
-    <section className="materials-example"><header><div><Terminal size={15}/><b>{material.exampleLabel}</b></div><button onClick={copyExample} aria-label="Copy example"><Clipboard size={14}/>{copied ? 'Copied' : 'Copy'}</button></header><pre><code>{material.example}</code></pre>{copyError&&<p className="copy-error">Clipboard permission was unavailable. Select the example text to copy it manually.</p>}</section>
+    <section className="materials-example"><header><div><Terminal size={15}/><b>{material.exampleLabel}</b></div><button onClick={()=>copyContent(material.example,'example')} aria-label="Copy example"><Clipboard size={14}/>{copied==='example'?'Copied':'Copy'}</button></header><pre><code>{material.example}</code></pre></section>
+    {commands&&<section className="materials-example"><header><div><Terminal size={15}/><b>{material.commandsLabel??'COMMANDS'}</b></div><button onClick={()=>copyContent(commands,'commands')} aria-label="Copy commands"><Clipboard size={14}/>{copied==='commands'?'Copied':'Copy'}</button></header><pre><code>{commands}</code></pre></section>}
+    {copyError&&<p className="copy-error">Clipboard permission was unavailable. Select the code above to copy it manually.</p>}
     <section className="materials-check"><div className="check-heading"><span>KNOWLEDGE CHECK</span>{passed&&<b><CircleCheck size={15}/> CHECK PASSED</b>}</div><h3>{material.question}</h3><div className="check-options">{material.options.map((option,index)=><button key={option} className={selected===index?index===material.answer?'answer-correct':'answer-incorrect':''} onClick={()=>answer(index)} aria-pressed={selected===index}><span>{String.fromCharCode(65+index)}</span>{option}</button>)}</div>{selected!==null&&<p aria-live="polite" className={selected===material.answer?'answer-feedback correct':'answer-feedback'}>{selected===material.answer?<Check size={16}/>:<CircleCheck size={16}/>}<span>{selected===material.answer?`That’s right. ${material.explanation}`:'Not quite. Review the notes above and try another answer.'}</span></p>}</section>
     {material.source && <p className="materials-source">Further reading: <a href={material.source} target="_blank" rel="noreferrer">official documentation</a> (opens in a new tab).</p>}
   </section>
