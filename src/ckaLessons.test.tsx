@@ -20,6 +20,8 @@ describe('CKA topic lessons', () => {
       const markup = renderToStaticMarkup(<Scene/>)
       expect(markup).toContain('<button')
       expect(markup).not.toContain('INTERACTIVE CONCEPT MAP')
+      expect(markup, `Missing practice goal for ${lesson.id}`).toContain('TRY IT')
+      expect(markup, `Practice goal already complete for ${lesson.id}`).not.toContain('lesson-coach-complete')
     }
   })
 })

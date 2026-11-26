@@ -1,5 +1,7 @@
 import { useState, type ComponentType } from 'react'
 import { Database, Globe, Network, Server, Shield, Waypoints } from 'lucide-react'
+import LessonCoach from './LessonCoach'
+import LabValue from './LabValue'
 import './ConceptLabs.css'
 
 export type NetworkStorageLessonId = 'service-types' | 'network-policy' | 'gateway' | 'provisioning'
@@ -152,15 +154,16 @@ export function ServiceTypesLab() {
         const selected = type === example.type
         const typeDecision = resolveServiceExample({ ...example, type })
         const typeWarning = typeDecision.status === 'blocked'
-        return <div key={type} className={`lab-node ${selected ? typeWarning ? 'lab-node-warning' : 'lab-node-good' : ''}`} style={{ borderColor: selected ? '#65d8e6' : '#40566c', background: selected ? '#173447' : '#13283a' }}>
+        return <div key={type} className={`lab-node ${selected ? typeWarning ? 'lab-node-warning' : 'lab-node-good' : ''}`}>
           {type === 'ClusterIP' ? <Network size={22}/> : type === 'NodePort' ? <Server size={22}/> : <Globe size={22}/>}
           <b>{type}</b>
           <small>{type === 'ClusterIP' ? 'virtual IP inside cluster' : type === 'NodePort' ? 'port on eligible nodes' : 'requests external load balancer'}</small>
-          <code>{selected ? typeDecision.status === 'reachable' ? 'SELECTED · REACHABLE' : `SELECTED · ${typeDecision.reason.toUpperCase()}` : 'COMPARE'}</code>
+          <LabValue value={selected ? typeDecision.status === 'reachable' ? 'SELECTED · REACHABLE' : `SELECTED · ${typeDecision.reason.toUpperCase()}` : 'COMPARE'}/>
         </div>
       })}
     </div>
     <div className={`lab-result ${decision.status === 'reachable' ? 'lab-result-good' : 'lab-result-warning'}`} role="status"><b>{decision.status === 'reachable' ? 'Request reaches the backend' : 'Request cannot reach the backend'}</b><p>{serviceReason[decision.reason]}</p></div>
+    <LessonCoach task="Make the external load balancer ready and see whether the outside client can reach the app." hint="Keep LoadBalancer selected and the Pod Ready, then select Load balancer ready." complete={example.type === 'LoadBalancer' && example.client === 'outside' && example.externalPathReady && decision.status === 'reachable'} success="This example has a ready external path and a matching, Ready backend."/>
     <p className="lab-source">Simplified example: one Service, one Pod, and a correct port mapping. A NodePort still depends on reachable node networking. A LoadBalancer Service only requests an external endpoint; compatible infrastructure/controller setup must provide it. <a href="https://kubernetes.io/docs/concepts/services-networking/service/" target="_blank" rel="noreferrer">Read about Services</a>.</p>
   </div>
 }
@@ -186,10 +189,14 @@ export function NetworkPolicyLab() {
       <fieldset><legend>CLUSTER NETWORK</legend><div><button type="button" aria-pressed={example.pluginEnforces} onClick={() => update({ pluginEnforces: !example.pluginEnforces })}>{example.pluginEnforces ? 'Plugin enforces policy' : 'No enforcing plugin'}</button></div></fieldset>
     </div>
     <div className="lab-flow" aria-label="NetworkPolicy direction matrix" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12 }}>
-      <div className={`lab-node ${decision.reason === 'egress' || decision.reason === 'both' || decision.reason === 'plugin' ? 'lab-node-warning' : 'lab-node-good'}`} style={{ borderColor: '#e5a450', background: '#35291e' }}><Network size={22}/><b>Source · api in shop</b><small>Outgoing traffic to db:5432</small><code>{!example.pluginEnforces ? 'PLUGIN DOES NOT ENFORCE' : example.egressIsolated ? example.egressAllows ? 'EGRESS RULE ALLOWS' : 'ISOLATED · BLOCKED' : 'EGRESS NOT ISOLATED'}</code></div>
-      <div className={`lab-node ${decision.reason === 'ingress' || decision.reason === 'both' || decision.reason === 'plugin' ? 'lab-node-warning' : 'lab-node-good'}`} style={{ borderColor: '#5aaed1', background: '#1b2c3b' }}><Database size={22}/><b>Destination · db in shop</b><small>Incoming traffic from api:5432</small><code>{!example.pluginEnforces ? 'PLUGIN DOES NOT ENFORCE' : example.ingressIsolated ? example.ingressAllows ? 'INGRESS RULE ALLOWS' : 'ISOLATED · BLOCKED' : 'INGRESS NOT ISOLATED'}</code></div>
+      <div className={`lab-node ${decision.reason === 'egress' || decision.reason === 'both' || decision.reason === 'plugin' ? 'lab-node-warning' : 'lab-node-good'}`}><Network size={22}/><b>Source · api in shop</b><small>Outgoing traffic to db:5432</small><LabValue value={!example.pluginEnforces ? 'PLUGIN DOES NOT ENFORCE' : example.egressIsolated ? example.egressAllows ? 'EGRESS RULE ALLOWS' : 'ISOLATED · BLOCKED' : 'EGRESS NOT ISOLATED'}/></div>
+      <div className={`lab-node ${decision.reason === 'ingress' || decision.reason === 'both' || decision.reason === 'plugin' ? 'lab-node-warning' : 'lab-node-good'}`}><Database size={22}/><b>Destination · db in shop</b><small>Incoming traffic from api:5432</small><LabValue value={!example.pluginEnforces ? 'PLUGIN DOES NOT ENFORCE' : example.ingressIsolated ? example.ingressAllows ? 'INGRESS RULE ALLOWS' : 'ISOLATED · BLOCKED' : 'INGRESS NOT ISOLATED'}/></div>
+    </div>
+    <div className={`policy-path policy-path-${decision.status}`} aria-label={`Example connection: ${decision.status === 'not-enforced' ? 'policy not enforced' : decision.status}`}>
+      <span>api · outgoing</span><div aria-hidden="true"><i/></div><span>db · incoming</span>
     </div>
     <div className={`lab-result ${decision.status === 'allowed' ? 'lab-result-good' : 'lab-result-warning'}`} role="status"><b>{decision.status === 'allowed' ? 'Connection allowed' : decision.status === 'not-enforced' ? 'Policy is not being enforced' : 'Connection blocked'}</b><p>{policyReason[decision.reason]}</p></div>
+    <LessonCoach task="Allow api to reach db by changing the destination ingress rule." hint="Egress already allows the connection. Select the destination's No allow rule button." complete={decision.status === 'allowed' && example.ingressIsolated && example.ingressAllows && example.egressIsolated && example.egressAllows} success="Both isolated directions now allow this example connection."/>
     <p className="lab-source">Simplified example: one source, one destination, and one rule per direction. Isolation and allowed traffic are direction-specific; policies add allowed traffic together. A NetworkPolicy has no effect unless the cluster’s network plugin enforces it. <a href="https://kubernetes.io/docs/concepts/services-networking/network-policies/" target="_blank" rel="noreferrer">Read about NetworkPolicy</a>.</p>
   </div>
 }
@@ -210,11 +217,12 @@ export function GatewayLab() {
       <fieldset><legend>BACKEND</legend><div>{checkButton('backendConfigured', 'Service port')}{checkButton('endpointsReady', 'Ready endpoints')}</div></fieldset>
     </div>
     <div className="lab-flow" aria-label="Gateway API resource status board" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(165px, 1fr))', gap: 10 }}>
-      <div className={`lab-node ${example.controllerReady ? 'lab-node-good' : 'lab-node-warning'}`} style={{ borderColor: '#50c7b1', background: '#173a38' }}><Waypoints size={22}/><b>Gateway listener</b><small>HTTPS · shop.example</small><code>{example.controllerReady ? 'CONTROLLER PROGRAMMED' : 'CONTROLLER MISSING'}</code></div>
-      <div className={`lab-node ${example.routeAttached && example.listenerMatches ? 'lab-node-good' : 'lab-node-warning'}`} style={{ borderColor: '#ab81df', background: '#2a2340' }}><Globe size={22}/><b>HTTPRoute</b><small>Parent: shop-gw · Path: /</small><code>{example.routeAttached ? example.listenerMatches ? 'ATTACHED · HOST MATCH' : 'HOST MISMATCH' : 'PARENT NOT ATTACHED'}</code></div>
-      <div className={`lab-node ${example.backendConfigured && example.endpointsReady ? 'lab-node-good' : 'lab-node-warning'}`} style={{ borderColor: '#59aed3', background: '#1b2c3c' }}><Server size={22}/><b>Backend Service</b><small>shop:8080 · {example.endpointsReady ? '2 Ready endpoints' : '0 Ready endpoints'}</small><code>{!example.backendConfigured ? 'SERVICE PORT MISSING' : example.endpointsReady ? 'READY BACKENDS' : 'NO READY ENDPOINTS'}</code></div>
+      <div className={`lab-node ${example.controllerReady ? 'lab-node-good' : 'lab-node-warning'}`}><Waypoints size={22}/><b>Gateway listener</b><small>HTTPS · shop.example</small><LabValue value={example.controllerReady ? 'CONTROLLER PROGRAMMED' : 'CONTROLLER MISSING'}/></div>
+      <div className={`lab-node ${example.routeAttached && example.listenerMatches ? 'lab-node-good' : 'lab-node-warning'}`}><Globe size={22}/><b>HTTPRoute</b><small>Parent: shop-gw · Path: /</small><LabValue value={example.routeAttached ? example.listenerMatches ? 'ATTACHED · HOST MATCH' : 'HOST MISMATCH' : 'PARENT NOT ATTACHED'}/></div>
+      <div className={`lab-node ${example.backendConfigured && example.endpointsReady ? 'lab-node-good' : 'lab-node-warning'}`}><Server size={22}/><b>Backend Service</b><small>shop:8080 · {example.endpointsReady ? '2 Ready endpoints' : '0 Ready endpoints'}</small><LabValue value={!example.backendConfigured ? 'SERVICE PORT MISSING' : example.endpointsReady ? 'READY BACKENDS' : 'NO READY ENDPOINTS'}/></div>
     </div>
     <div className={`lab-result ${decision.status === 'routed' ? 'lab-result-good' : 'lab-result-warning'}`} role="status"><b>{decision.status === 'routed' ? 'Request is routed to shop' : 'Route is not ready'}</b><p>{gatewayReason[decision.reason]}</p></div>
+    <LessonCoach task="Change the host so it no longer matches the listener. Find the route problem." hint="Select Host matches listener to change the host check." complete={decision.reason === 'listener'} success="The example route cannot match the listener until the host is corrected."/>
     <p className="lab-source">Simplified example: one Gateway listener, HTTPRoute, Service port, and ready endpoints. Gateway API objects describe intent; a compatible controller must program them. Check parent references, listener and route status, backend port, and EndpointSlices. <a href="https://gateway-api.sigs.k8s.io/" target="_blank" rel="noreferrer">Read about Gateway API</a>.</p>
   </div>
 }
@@ -245,11 +253,12 @@ export function ProvisioningLab() {
       </div></fieldset>
     </div>
     <div className="lab-flow" aria-label="PVC fit checks and data lifecycle" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(165px, 1fr))', gap: 10 }}>
-      <div className={`lab-node ${example.classMatches ? 'lab-node-good' : 'lab-node-warning'}`} style={{ borderColor: '#b98ce8', background: '#29213d' }}><Database size={22}/><b>PVC request · 20 Gi</b><small>gold-csi · ReadWriteOnce</small><code>{example.classMatches ? 'CLASS MATCH' : 'CLASS MISMATCH'}</code></div>
-      <div className={`lab-node ${example.provisionerReady && example.accessMatches ? 'lab-node-good' : 'lab-node-warning'}`} style={{ borderColor: '#55c5a5', background: '#183730' }}><Server size={22}/><b>Provisioner & access</b><small>CSI driver · storage capability</small><code>{!example.provisionerReady ? 'DRIVER UNAVAILABLE' : example.accessMatches ? 'REQUEST CAN FIT' : 'ACCESS MODE MISMATCH'}</code></div>
-      <div className={`lab-node ${decision.status === 'bound' ? 'lab-node-good' : 'lab-node-warning'}`} style={{ borderColor: '#e5a450', background: '#35291e' }}><Database size={22}/><b>{decision.status === 'bound' ? 'Bound volume' : 'Claim Pending'}</b><small>{example.reclaimPolicy} · {example.backupExists ? 'backup exists' : 'no backup'}</small><code>{decision.reason === 'consumer' ? 'WAITING FOR POD' : decision.status === 'bound' ? 'PV BOUND' : 'CHECK REQUEST'}</code></div>
+      <div className={`lab-node ${example.classMatches ? 'lab-node-good' : 'lab-node-warning'}`}><Database size={22}/><b>PVC request · 20 Gi</b><small>gold-csi · ReadWriteOnce</small><LabValue value={example.classMatches ? 'CLASS MATCH' : 'CLASS MISMATCH'}/></div>
+      <div className={`lab-node ${example.provisionerReady && example.accessMatches ? 'lab-node-good' : 'lab-node-warning'}`}><Server size={22}/><b>Provisioner & access</b><small>CSI driver · storage capability</small><LabValue value={!example.provisionerReady ? 'DRIVER UNAVAILABLE' : example.accessMatches ? 'REQUEST CAN FIT' : 'ACCESS MODE MISMATCH'}/></div>
+      <div className={`lab-node ${decision.status === 'bound' ? 'lab-node-good' : 'lab-node-warning'}`}><Database size={22}/><b>{decision.status === 'bound' ? 'Bound volume' : 'Claim Pending'}</b><small>{example.reclaimPolicy} · {example.backupExists ? 'backup exists' : 'no backup'}</small><LabValue value={decision.reason === 'consumer' ? 'WAITING FOR POD' : decision.status === 'bound' ? 'PV BOUND' : 'CHECK REQUEST'}/></div>
     </div>
     <div className={`lab-result ${decision.status === 'bound' ? 'lab-result-good' : 'lab-result-warning'}`} role="status"><b>{decision.status === 'bound' ? 'Claim is Bound' : decision.reason === 'consumer' ? 'Waiting for a consuming Pod' : 'Claim is Pending'}</b><p>{provisioningReason[decision.reason]} If a bound claim is deleted, its reclaim policy applies: {decision.deletion === 'backing-storage-may-be-removed' ? 'Delete may remove backing storage.' : 'Retain keeps storage for manual handling.'} Backup check: {decision.backup === 'no-backup' ? 'no backup is represented here' : 'a separate backup is represented here'}.</p></div>
+    <LessonCoach task="Select a node for the consuming Pod and see the waiting claim bind." hint="WaitForFirstConsumer is on. The other fit checks are already satisfied in the initial example." complete={example.waitForConsumer && example.consumerScheduled && decision.status === 'bound'} success="After a node is selected, this example's compatible claim can bind."/>
     <p className="lab-source">Simplified example: one CSI-backed class and one claim. Provisioning needs a matching class/provisioner and compatible access mode; WaitForFirstConsumer can wait for scheduling. Reclaim policy does not equal backup—verify the storage system and backup separately. <a href="https://kubernetes.io/docs/concepts/storage/storage-classes/" target="_blank" rel="noreferrer">Read about StorageClasses</a>.</p>
   </div>
 }
