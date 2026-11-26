@@ -1,0 +1,29 @@
+.topic-lesson-visual:has(.signal-trace[data-playing="true"]) :is(
+  .pod-container.app-container:not(.pod-waiting),
+  .deploy-pod:not(.pod-pending),
+  .endpoint-pod.endpoint-ready,
+  .topology-pod-card,
+  .quota-pod,
+  .app-pod.state-running,
+  .app-pod.state-throttled
+) {
+  animation: workload-activity 2.4s ease-in-out infinite;
+}
+
+@keyframes workload-activity {
+  0%, 100% { box-shadow: 0 0 0 0 #67d6b400; }
+  50% { box-shadow: 0 0 16px 2px #67d6b455; }
+}
+
+.probes-paused :is(.probe-live-dot, .parallel-probe.probe-active, .container-status-icon) { animation-play-state: paused; }
+
+@media (prefers-reduced-motion: reduce) {
+  .topic-lesson-visual:has(.signal-trace[data-playing="true"]) :is(
+    .pod-container.app-container,
+    .deploy-pod,
+    .endpoint-pod,
+    .topology-pod-card,
+    .quota-pod,
+    .app-pod
+  ) { animation: none; }
+}

@@ -15,6 +15,7 @@ import type { Material } from './LearningMaterials'
 import { ExtendedLessonScene, extendedLessons } from './ExtendedLessons'
 import './lessons/CourseShell.css'
 import './CourseTypography.css'
+import './lessons/WorkloadMotion.css'
 
 type LessonProps = { onSelect: (name: string) => void }
 type Lesson = { id:string; title:string; subtitle:string; body:string; takeaway:string; Component:ComponentType<LessonProps> }

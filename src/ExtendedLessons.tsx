@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { motion, useReducedMotion } from 'framer-motion'
-import { ArrowRight, RotateCcw } from 'lucide-react'
+import { Activity, ArrowRight, Boxes, CirclePause, Database, FileCode2, Globe, KeyRound, Network, Play, RotateCcw, Server, ShieldCheck } from 'lucide-react'
 import type { Material } from './LearningMaterials'
 import './ExtendedLessons.css'
 
@@ -12,6 +12,7 @@ type ExtendedLesson = {
   takeaway: string
   keywords: string
   steps: Step[]
+  diagram: { nodes: [string, string, string]; links: [string, string] }
   material: Material
 }
 
@@ -20,6 +21,7 @@ export const extendedLessons: ExtendedLesson[] = [
     id: 'getting-started', title: 'Getting started with a cluster',
     body: 'Learn how a local cluster, kubeconfig, and kubectl work together before deploying a workload.',
     takeaway: 'Always verify the current context before changing a cluster.', keywords: 'setup installation minikube kind context kubectl',
+    diagram: { nodes: ['Cluster', 'Context', 'kubectl'], links: ['select target', 'inspect'] },
     steps: [
       { title: 'Choose a cluster', detail: 'Create a disposable local cluster with a tool such as kind, or use a cluster provided by your organization. Follow that provider’s setup instructions.' },
       { title: 'Select a context', detail: 'A kubeconfig context selects a cluster, user, and optionally a namespace. Check the current context before making changes.' },
@@ -41,6 +43,7 @@ export const extendedLessons: ExtendedLesson[] = [
     id: 'namespaces', title: 'Namespaces & isolation',
     body: 'Explore how namespaces organize namespaced resources and support team boundaries.',
     takeaway: 'Namespaces organize resources; they are not a complete security boundary.', keywords: 'namespace context isolation teams',
+    diagram: { nodes: ['Namespace', 'Target', 'Controls'], links: ['scope', 'protect'] },
     steps: [
       { title: 'Create a boundary', detail: 'A namespace groups namespaced objects. Different namespaces can each contain a Service named api.' },
       { title: 'Target a namespace', detail: 'Specify -n when inspecting or changing namespaced resources. A context can also set a default namespace.' },
@@ -62,6 +65,7 @@ export const extendedLessons: ExtendedLesson[] = [
     id: 'dns', title: 'Service discovery & DNS',
     body: 'Follow a name lookup from an application to the Service it wants to reach.',
     takeaway: 'A Service name gives clients a stable discovery mechanism, not a guarantee of healthy backends.', keywords: 'dns coredns fqdn discovery endpoints',
+    diagram: { nodes: ['Client Pod', 'Cluster DNS', 'Service + endpoint'], links: ['lookup', 'resolve'] },
     steps: [
       { title: 'Ask for a name', detail: 'A Pod resolves a Service name using its configured DNS search domains. A short name normally refers to a Service in the same namespace.' },
       { title: 'Resolve the Service', detail: 'Cluster DNS returns a Service address for a normal Service. A headless Service instead resolves to endpoint addresses.' },
@@ -83,6 +87,7 @@ export const extendedLessons: ExtendedLesson[] = [
     id: 'storage', title: 'Persistent storage',
     body: 'Trace a storage request from a workload to a persistent volume and understand its lifecycle.',
     takeaway: 'A claim requests storage; actual persistence and access depend on the storage implementation and policy.', keywords: 'volume pv pvc storageclass csi persistent',
+    diagram: { nodes: ['PVC request', 'PersistentVolume', 'Pod mount'], links: ['bind', 'mount'] },
     steps: [
       { title: 'Request storage', detail: 'A PersistentVolumeClaim (PVC) requests capacity and an access mode, optionally using a StorageClass.' },
       { title: 'Bind a volume', detail: 'A suitable PersistentVolume is bound to the claim. A provisioner can dynamically create one when configured.' },
@@ -104,6 +109,7 @@ export const extendedLessons: ExtendedLesson[] = [
     id: 'configuration', title: 'ConfigMaps & Secrets',
     body: 'See how configuration and sensitive values reach a workload, and where the security boundaries are.',
     takeaway: 'Base64 encoding is not encryption; protect Secrets with access controls and encryption at rest.', keywords: 'configmap secret environment variables configuration encryption',
+    diagram: { nodes: ['ConfigMap', 'Secret', 'Pod'], links: ['separate values', 'consume'] },
     steps: [
       { title: 'Separate configuration', detail: 'A ConfigMap holds non-confidential configuration separately from the container image.' },
       { title: 'Protect sensitive values', detail: 'A Secret holds sensitive data, but access must be restricted with RBAC and encryption at rest should be configured.' },
@@ -125,6 +131,7 @@ export const extendedLessons: ExtendedLesson[] = [
     id: 'statefulsets', title: 'StatefulSets & identity',
     body: 'Explore stable workload identity and storage for applications that need to distinguish their replicas.',
     takeaway: 'Stable identity helps stateful workloads; it does not replace replication or backups.', keywords: 'statefulset ordinal headless service volume claim database',
+    diagram: { nodes: ['StatefulSet', 'Headless Service', 'Pod + PVC'], links: ['discovery', 'identity & data'] },
     steps: [
       { title: 'Assign identities', detail: 'A StatefulSet gives Pods stable ordinal names such as database-0 and database-1.' },
       { title: 'Discover peers', detail: 'A governing headless Service enables stable network identities for StatefulSet Pods when configured correctly.' },
@@ -146,6 +153,7 @@ export const extendedLessons: ExtendedLesson[] = [
     id: 'api', title: 'The Kubernetes API',
     body: 'Trace how a request reaches the API server and how controllers respond to changes.',
     takeaway: 'The API stores desired state; controllers reconcile it asynchronously.', keywords: 'api server manifest spec status admission custom resource crd',
+    diagram: { nodes: ['kubectl', 'API server', 'Controller'], links: ['request', 'reconcile'] },
     steps: [
       { title: 'Send a request', detail: 'kubectl sends an authenticated request to the API server for a resource and namespace.' },
       { title: 'Authorize and admit', detail: 'The API server authorizes the request and applies relevant admission checks before accepting a write.' },
@@ -167,6 +175,7 @@ export const extendedLessons: ExtendedLesson[] = [
     id: 'rbac', title: 'API access & RBAC',
     body: 'Follow an API request through identity and authorization using least-privilege permissions.',
     takeaway: 'Grant only the verbs and resources an identity needs, at the narrowest practical scope.', keywords: 'authentication authorization role rolebinding serviceaccount permissions rbac',
+    diagram: { nodes: ['Identity', 'Authorization', 'RoleBinding'], links: ['authenticate', 'grant scope'] },
     steps: [
       { title: 'Authenticate', detail: 'The API server identifies the caller, such as a human user or a workload ServiceAccount.' },
       { title: 'Authorize', detail: 'An authorization mechanism such as RBAC evaluates whether that identity can perform the requested verb on the resource.' },
@@ -188,6 +197,7 @@ export const extendedLessons: ExtendedLesson[] = [
     id: 'security', title: 'Threat modeling & production security',
     body: 'Walk through assets, threats, and layered controls for a Kubernetes workload.',
     takeaway: 'Security is layered across identities, workloads, networking, supply chain, and operations.', keywords: 'security threats pod security admission policy network supply chain hardening',
+    diagram: { nodes: ['Assets', 'Threats', 'Defenses'], links: ['assess', 'mitigate'] },
     steps: [
       { title: 'Identify assets', detail: 'List sensitive data, workload identities, images, and control-plane access. Identify trust boundaries and entry points.' },
       { title: 'Consider threats', detail: 'Consider a compromised container, exposed credentials, vulnerable image, or overly broad API permissions and their potential impact.' },
@@ -210,6 +220,7 @@ export const extendedLessons: ExtendedLesson[] = [
     id: 'terminology', title: 'Kubernetes terminology',
     body: 'Build a mental map of the vocabulary you will encounter across the learning path.',
     takeaway: 'Think in terms of desired state, controllers, workloads, and networking.', keywords: 'glossary terminology vocabulary definitions objects',
+    diagram: { nodes: ['Manifest', 'Workload', 'Service + PVC'], links: ['declare', 'connect'] },
     steps: [
       { title: 'Declare intent', detail: 'A manifest describes Kubernetes API objects. The spec expresses desired configuration, while status reports observed state.' },
       { title: 'Run workloads', detail: 'A Pod groups containers; controllers such as Deployments and StatefulSets manage Pods to meet workload goals.' },
@@ -234,10 +245,36 @@ export const extendedLessons: ExtendedLesson[] = [
 export function ExtendedLessonScene({ lesson }: { lesson: ExtendedLesson }) {
   const [step, setStep] = useState(0)
   const reducedMotion = useReducedMotion()
+  const [playing, setPlaying] = useState(() => !reducedMotion)
+  const diagramIcons: Record<string, [typeof Server, typeof Server, typeof Server]> = {
+    'getting-started': [Server, FileCode2, Activity],
+    namespaces: [Boxes, FileCode2, ShieldCheck],
+    dns: [Boxes, Globe, Network],
+    storage: [FileCode2, Database, Boxes],
+    configuration: [FileCode2, KeyRound, Boxes],
+    statefulsets: [Server, Network, Database],
+    api: [FileCode2, Server, Activity],
+    rbac: [KeyRound, ShieldCheck, FileCode2],
+    security: [Database, Activity, ShieldCheck],
+    terminology: [FileCode2, Boxes, Network],
+  }
+  const icons = diagramIcons[lesson.id]
   return <div className="explore-scene">
-    <div className="explore-heading"><span>INTERACTIVE WALKTHROUGH</span><span>{step + 1} / {lesson.steps.length}</span></div>
+    <div className="explore-heading"><span>INTERACTIVE CONCEPT MAP</span><span>{step + 1} / {lesson.steps.length}</span></div>
     <h2>Explore the flow</h2>
-    <p>Choose a step to see how the pieces fit together.</p>
+    <p>Select a component to inspect its role. The moving signals illustrate the relationship between concepts.</p>
+    <div className={`explore-diagram ${playing && !reducedMotion ? 'diagram-playing' : ''}`} aria-label={`${lesson.title} concept map`}>
+      {lesson.diagram.nodes.map((node, index) => {
+        const Icon = icons[index]
+        return <div className="explore-diagram-part" key={node}>
+          <button className={`explore-node ${step === index ? 'explore-node-active' : ''}`} onClick={() => setStep(index)} aria-pressed={step === index}>
+            <span className="explore-node-icon"><Icon size={21}/></span><b>{node}</b><small>0{index + 1} · INSPECT</small>
+          </button>
+          {index < lesson.diagram.links.length && <div className="explore-link" aria-hidden="true"><span className="explore-link-line"><i/><i/></span><small>{lesson.diagram.links[index]}</small></div>}
+        </div>
+      })}
+    </div>
+    <div className="explore-diagram-toolbar"><span><i/> {playing && !reducedMotion ? 'ILLUSTRATIVE SIGNALS LIVE' : 'SIGNALS PAUSED'}</span><button type="button" onClick={() => setPlaying(value => !value)} disabled={Boolean(reducedMotion)}>{playing && !reducedMotion ? <CirclePause size={15}/> : <Play size={15}/>} {playing && !reducedMotion ? 'Pause signals' : reducedMotion ? 'Reduced motion enabled' : 'Play signals'}</button></div>
     <div className="explore-steps" aria-label="Walkthrough steps">
       {lesson.steps.map((item, index) => <button key={item.title} className={index === step ? 'active' : ''} onClick={() => setStep(index)} aria-pressed={index === step}><span>{String(index + 1).padStart(2, '0')}</span><b>{item.title}</b><ArrowRight size={16}/></button>)}
     </div>

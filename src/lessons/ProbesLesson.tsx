@@ -22,18 +22,22 @@ const stages = [
 ]
 
 export default function ProbesLesson({ onSelect }: { onSelect: (name: string) => void }) {
+  const reducedMotion = useReducedMotion()
   const [stage, setStage] = useState(0)
-  const [playing, setPlaying] = useState(true)
+  const [playing, setPlaying] = useState(() => !reducedMotion)
   const [startupFailure, setStartupFailure] = useState(false)
   const [readinessFailure, setReadinessFailure] = useState(false)
   const [livenessFailure, setLivenessFailure] = useState(false)
   const [restartCount, setRestartCount] = useState(0)
   const [countdown, setCountdown] = useState(100)
   const [tested, setTested] = useState<Set<string>>(() => new Set())
-  const reducedMotion = useReducedMotion()
 
   useEffect(() => {
-    if (!playing || reducedMotion) return
+    if (reducedMotion) setPlaying(false)
+  }, [reducedMotion])
+
+  useEffect(() => {
+    if (!playing) return
     setCountdown(100)
     const interval = window.setInterval(() => {
       setCountdown(value => Math.max(0, value - 4))
@@ -55,7 +59,7 @@ export default function ProbesLesson({ onSelect }: { onSelect: (name: string) =>
       window.clearInterval(interval)
       window.clearTimeout(timer)
     }
-  }, [playing, reducedMotion, stage, startupFailure, readinessFailure, livenessFailure])
+  }, [playing, stage, startupFailure, readinessFailure, livenessFailure])
 
   function reset() {
     setStage(0)
@@ -64,7 +68,7 @@ export default function ProbesLesson({ onSelect }: { onSelect: (name: string) =>
     setStartupFailure(false)
     setReadinessFailure(false)
     setLivenessFailure(false)
-    setPlaying(true)
+    setPlaying(!reducedMotion)
     setTested(new Set())
   }
 
@@ -96,8 +100,9 @@ export default function ProbesLesson({ onSelect }: { onSelect: (name: string) =>
   const restarting = stage === 9
   const endpointEligible = startupPassed && readinessPassed && !killed && !readinessBlocked
   const current = stages[stage]
+  const animateSignals = playing && !reducedMotion
 
-  return <div className="probes-scene probes-continuous">
+  return <div className={`probes-scene probes-continuous ${animateSignals ? '' : 'probes-paused'}`}>
     <div className="probe-sim-toolbar">
       <div><span className="probe-live-dot"/> POD HEALTH &amp; TRAFFIC LIFECYCLE</div>
       <StepSequenceControls active={stage} total={stages.length} playing={playing} intervalMs={2800} onPrevious={previousStep} onNext={nextStep} onToggle={() => setPlaying(value => !value)} onReset={reset} compact />
@@ -119,7 +124,7 @@ export default function ProbesLesson({ onSelect }: { onSelect: (name: string) =>
         </button>
 
         <div className={`traffic-route ${!endpointEligible?'traffic-route-blocked':''}`} aria-hidden="true">
-          <motion.span className="clusterip-packet" animate={{ x: endpointEligible ? [0, 72, 0] : 0, opacity: endpointEligible ? [0.3, 1, 0.3] : readinessBlocked ? [1,.45,1] : .18 }} transition={{ duration: endpointEligible ? 1.4 : .8, repeat: !killed && !restarting ? Infinity : 0, ease: 'easeInOut' }}/>
+          <motion.span className="clusterip-packet" animate={{ x: endpointEligible && animateSignals ? [0, 72, 0] : 0, opacity: endpointEligible ? animateSignals ? [0.3, 1, 0.3] : 1 : readinessBlocked && animateSignals ? [1,.45,1] : .18 }} transition={{ duration: endpointEligible ? 1.4 : .8, repeat: animateSignals && !killed && !restarting ? Infinity : 0, ease: 'easeInOut' }}/>
           <span className="route-line"/>
         </div>
 
@@ -128,7 +133,7 @@ export default function ProbesLesson({ onSelect }: { onSelect: (name: string) =>
 
           <div className="probe-pod-content">
             <div className="container-column">
-              <motion.div className={`app-container-monitor ${killed ? 'container-killed' : restarting ? 'container-restarting' : ''} ${stage === 0 ? 'container-booting' : ''}`} onClick={() => onSelect('Application container')} animate={killed ? { opacity: [.2, .55, .2] } : restarting ? { scale: [.96, 1, .96] } : { opacity: 1, scale: 1 }} transition={{ duration: 1, repeat: killed || restarting ? Infinity : 0 }}>
+              <motion.div className={`app-container-monitor ${killed ? 'container-killed' : restarting ? 'container-restarting' : ''} ${stage === 0 ? 'container-booting' : ''}`} onClick={() => onSelect('Application container')} animate={animateSignals && killed ? { opacity: [.2, .55, .2] } : animateSignals && restarting ? { scale: [.96, 1, .96] } : { opacity: 1, scale: 1 }} transition={{ duration: 1, repeat: animateSignals && (killed || restarting) ? Infinity : 0 }}>
                 <span className="container-status-icon">{killed ? '×' : restarting ? '↻' : '◆'}</span>
                 <div><b>api-container</b><small>{killed ? 'terminated' : restarting ? 'starting process' : stage === 0 ? 'booting...' : 'process running'}</small></div>
                 <span className="container-port">:8080</span>
@@ -136,15 +141,15 @@ export default function ProbesLesson({ onSelect }: { onSelect: (name: string) =>
             </div>
 
             <div className="probe-rail">
-              <motion.div className={`parallel-probe startup-probe ${stage === 1 ? 'probe-active' : ''} ${startupBlocked ? 'probe-failed' : ''} ${startupPassed ? 'probe-passed' : ''}`} onClick={() => onSelect('Startup probe')} animate={startupBlocked ? { scale: [1, .98, 1] } : { scale: 1 }} transition={{ duration: .8, repeat: startupBlocked ? Infinity : 0 }}>
+              <motion.div className={`parallel-probe startup-probe ${stage === 1 ? 'probe-active' : ''} ${startupBlocked ? 'probe-failed' : ''} ${startupPassed ? 'probe-passed' : ''}`} onClick={() => onSelect('Startup probe')} animate={animateSignals && startupBlocked ? { scale: [1, .98, 1] } : { scale: 1 }} transition={{ duration: .8, repeat: animateSignals && startupBlocked ? Infinity : 0 }}>
                 <span className="probe-icon"><Rocket size={14}/></span><div><b>Startup probe</b><small>/started</small></div><span className="probe-result">{startupBlocked ? 'FAIL' : startupPassed ? 'PASS' : stage === 1 ? 'CHECK' : 'WAIT'}</span>
               </motion.div>
 
-              <motion.div className={`parallel-probe readiness-probe ${stage === 3 ? 'probe-active' : ''} ${readinessBlocked ? 'probe-failed' : ''} ${readinessPassed ? 'probe-passed' : ''}`} onClick={() => onSelect('Readiness probe')} animate={readinessBlocked ? { scale: [1, .98, 1] } : { scale: 1 }} transition={{ duration: .8, repeat: readinessBlocked ? Infinity : 0 }}>
+              <motion.div className={`parallel-probe readiness-probe ${stage === 3 ? 'probe-active' : ''} ${readinessBlocked ? 'probe-failed' : ''} ${readinessPassed ? 'probe-passed' : ''}`} onClick={() => onSelect('Readiness probe')} animate={animateSignals && readinessBlocked ? { scale: [1, .98, 1] } : { scale: 1 }} transition={{ duration: .8, repeat: animateSignals && readinessBlocked ? Infinity : 0 }}>
                 <span className="probe-icon"><HeartPulse size={14}/></span><div><b>Readiness probe</b><small>/ready</small></div><span className="probe-result">{readinessBlocked ? 'NOT READY' : readinessPassed ? 'READY' : stage === 3 ? 'CHECK' : 'GATED'}</span>
               </motion.div>
 
-              <motion.div className={`parallel-probe liveness-probe ${stage === 6 || stage === 7 ? 'probe-active' : ''} ${stage === 7 && livenessFailure ? 'probe-failed' : ''}`} onClick={() => onSelect('Liveness probe')} animate={stage === 7 && livenessFailure ? { scale: [1, .98, 1] } : { scale: 1 }} transition={{ duration: .8, repeat: stage === 7 && livenessFailure ? Infinity : 0 }}>
+              <motion.div className={`parallel-probe liveness-probe ${stage === 6 || stage === 7 ? 'probe-active' : ''} ${stage === 7 && livenessFailure ? 'probe-failed' : ''}`} onClick={() => onSelect('Liveness probe')} animate={animateSignals && stage === 7 && livenessFailure ? { scale: [1, .98, 1] } : { scale: 1 }} transition={{ duration: .8, repeat: animateSignals && stage === 7 && livenessFailure ? Infinity : 0 }}>
                 <span className="probe-icon"><RefreshCw size={14}/></span><div><b>Liveness probe</b><small>/healthz</small></div><span className="probe-result">{stage === 7 && livenessFailure ? 'KILL' : stage >= 6 ? 'HEALTHY' : 'GATED'}</span>
               </motion.div>
             </div>
@@ -158,7 +163,7 @@ export default function ProbesLesson({ onSelect }: { onSelect: (name: string) =>
         </div>
       </div>
 
-      <motion.div key={current.title} className={`probe-explanation ${startupBlocked || readinessBlocked || killed ? 'probe-explanation-fail' : ''}`} initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} aria-live="polite">
+      <motion.div key={current.title} className={`probe-explanation ${startupBlocked || readinessBlocked || killed ? 'probe-explanation-fail' : ''}`} initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} aria-live={playing ? 'off' : 'polite'}>
         <i/><div><b>{current.title}</b><p>{startupBlocked ? 'Startup has not passed. Readiness and liveness remain gated; this Pod is not eligible for normal Service traffic.' : readinessBlocked ? 'Readiness failed. The container remains running; its EndpointSlice entry can remain with ready=false, so normal Service traffic does not use it.' : killed ? 'Liveness failed. The container is killed and restarted in the same Pod sandbox; the Pod IP remains 10.244.1.8.' : current.detail}</p></div>
         <span>{restartCount ? `RESTART #${restartCount}` : 'RESTART #0'}</span>
       </motion.div>

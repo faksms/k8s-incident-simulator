@@ -17,6 +17,25 @@
 .explore-heading { display: flex; justify-content: space-between; color: #83e1bd; font-size: 11px; font-weight: 700; letter-spacing: .08em; }
 .explore-scene h2 { margin: 18px 0 6px; color: #f0f8f5; font-size: 24px; }
 .explore-scene > p, .explore-detail p { color: #b7c9d6; font-size: 14px; line-height: 1.65; }
+.explore-diagram { display: flex; align-items: center; padding: 22px 14px; border: 1px solid #28465a; border-radius: 12px; background: radial-gradient(ellipse at center, #163d4166, transparent 70%), #0b1826; }
+.explore-diagram-part { display: flex; align-items: center; flex: 1 1 0; min-width: 0; }
+.explore-diagram-part:last-child { flex: 0 1 27%; }
+.explore-node { display: grid; justify-items: center; gap: 7px; width: 100%; min-width: 0; min-height: 125px; padding: 12px 6px; border: 1px solid #3b586e; border-radius: 10px; background: #14283a; color: #d6e5ec; text-align: center; }
+.explore-node b { overflow-wrap: anywhere; font-size: 12px; line-height: 1.3; }
+.explore-node small { color: #91aebe; font-size: 9px; }
+.explore-node-icon { display: grid; place-items: center; width: 38px; height: 38px; border: 1px solid #356e68; border-radius: 11px; background: #183c39; color: #8de5c4; }
+.explore-node-active { border-color: #75dfba; background: #15362f; box-shadow: 0 0 20px #55c99f24; }
+.explore-link { flex: 1 1 38px; min-width: 28px; display: grid; gap: 10px; text-align: center; }
+.explore-link-line { position: relative; display: block; height: 2px; background: #3a6e78; }
+.explore-link-line i { position: absolute; top: -3px; left: 0; width: 8px; height: 8px; border-radius: 50%; background: #9af4e5; box-shadow: 0 0 10px #63e4d3; opacity: 0; }
+.diagram-playing .explore-link-line i { animation: explore-signal 2.8s linear infinite; }
+.diagram-playing .explore-link-line i + i { animation-delay: 1.4s; }
+.explore-link small { color: #9bb9c8; font-size: 9px; line-height: 1.2; }
+.explore-diagram-toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 10px 0 0; color: #9ab5bd; font-size: 10px; font-weight: 700; }
+.explore-diagram-toolbar span { display: flex; align-items: center; gap: 7px; }
+.explore-diagram-toolbar span i { width: 7px; height: 7px; border-radius: 50%; background: #75dfba; }
+.explore-diagram-toolbar button { display: inline-flex; align-items: center; gap: 6px; padding: 7px 10px; border: 1px solid #40566c; border-radius: 7px; background: #142437; color: #dce7f5; font-size: 12px; }
+@keyframes explore-signal { 0% { left: 0; opacity: 0; } 15% { opacity: 1; } 85% { opacity: 1; } 100% { left: calc(100% - 8px); opacity: 0; } }
 .explore-steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 20px 0; }
 .explore-steps button { display: flex; min-height: 92px; flex-direction: column; align-items: flex-start; gap: 8px; padding: 12px; border: 1px solid #344d60; border-radius: 10px; background: #101e2e; color: #b8cbd8; text-align: left; }
 .explore-steps button span { color: #83e1bd; font-size: 11px; }
@@ -33,7 +52,16 @@
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 @media (max-width: 620px) {
   .topic-index .course-steps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .explore-diagram { flex-direction: column; padding: 14px; }
+  .explore-diagram-part, .explore-diagram-part:last-child { flex: auto; flex-direction: column; width: 100%; }
+  .explore-node { min-height: 0; grid-template-columns: 38px 1fr auto; text-align: left; }
+  .explore-link { flex: auto; display: flex; align-items: center; gap: 10px; width: 100%; padding-left: 18px; text-align: left; }
+  .explore-link-line { width: 2px; height: 34px; }
+  .explore-link-line i { top: 0; left: -3px; }
+  .diagram-playing .explore-link-line i { animation-name: explore-signal-vertical; }
   .explore-steps { grid-template-columns: 1fr; }
   .explore-steps button { min-height: 0; flex-direction: row; align-items: center; }
   .explore-detail { min-height: 0; }
 }
+@keyframes explore-signal-vertical { 0% { top: 0; opacity: 0; } 15% { opacity: 1; } 85% { opacity: 1; } 100% { top: calc(100% - 8px); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .diagram-playing .explore-link-line i { animation: none; } }

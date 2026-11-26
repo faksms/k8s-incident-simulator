@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { Boxes, Container, HardDrive, Network, PackageCheck, Route } from 'lucide-react'
 import LessonCoach from './LessonCoach'
+import SignalTrace from './SignalTrace'
 import StepSequenceControls from './StepSequenceControls'
 import './PodsLesson.css'
 import './ModuleDiagramPolish.css'
@@ -56,6 +57,7 @@ export default function PodsLesson({onSelect}:{onSelect:(name:string)=>void}) {
       <button className={extras.sidecar?'action-active':''} onClick={()=>toggle('sidecar')}>{extras.sidecar?'Remove':'Add'} sidecar</button>
       <button className={extras.ambassador?'action-active':''} onClick={()=>toggle('ambassador')}>{extras.ambassador?'Remove':'Add'} ambassador</button>
     </div>
+    <SignalTrace title="POD RESOURCE MAP" steps={['Pod sandbox', 'shared network', 'application container']} onSelect={name=>onSelect(name === 'shared network' ? 'Shared network namespace' : name === 'application container' ? 'Application container' : 'Pod')}/>
     <div className="pod-insight"><b>BOUNDARY CHECK</b><span>One Pod IP · shared ports · init/setup lifecycle · helpers share the application lifecycle</span></div>
     <LessonCoach task="Build a Pod with an init container, a sidecar, and an ambassador. Then compare their roles." hint="Init containers finish in sequence before app containers start. Sidecars work alongside the app. Ambassadors proxy or abstract connections for the app." complete={complete} success="You explored all three helper patterns inside a shared Pod boundary."/>
   </div>

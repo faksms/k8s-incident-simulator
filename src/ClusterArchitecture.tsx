@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
+import { useReducedMotion } from 'framer-motion'
 import { Activity, ArrowRight, CheckCircle2, ChevronLeft, ChevronRight, CircleHelp, Cloud, Code2, Container, Network, Pause, Play, RotateCcw, ShieldCheck } from 'lucide-react'
 import LessonCoach from './lessons/LessonCoach'
 import StepSequenceControls from './lessons/StepSequenceControls'
@@ -65,8 +66,9 @@ const componentInfo: Record<string, string> = {
 }
 
 export default function ClusterArchitecture({ onComplete, passed, onPass }: { onComplete: () => void; passed: boolean; onPass: () => void }) {
+  const reducedMotion = useReducedMotion()
   const [phase, setPhase] = useState(0)
-  const [playing, setPlaying] = useState(false)
+  const [playing, setPlaying] = useState(() => !reducedMotion)
   const [selected, setSelected] = useState('')
   const [legIndex, setLegIndex] = useState(0)
   const mapRef = useRef<HTMLDivElement>(null)
@@ -76,6 +78,10 @@ export default function ClusterArchitecture({ onComplete, passed, onPass }: { on
   const flow = communicationFlows[phase]
   const activeLeg = flow[legIndex]
   const stepColor = phase === 5 ? '#fbbf24' : phase === 4 || phase === 6 ? '#38bdf8' : '#34d399'
+
+  useEffect(() => {
+    if (reducedMotion) setPlaying(false)
+  }, [reducedMotion])
 
   useEffect(() => {
     function measureActiveFlow() {
@@ -157,7 +163,8 @@ export default function ClusterArchitecture({ onComplete, passed, onPass }: { on
         return
       }
       if (phase >= phases.length - 1) {
-        setPlaying(false)
+        setPhase(0)
+        setLegIndex(0)
         return
       }
       setPhase(value => value + 1)
@@ -200,6 +207,13 @@ export default function ClusterArchitecture({ onComplete, passed, onPass }: { on
         : phase === 4
           ? 'CONTAINER STARTING'
           : 'READY'
+  const workloadDetail: Record<string, string> = {
+    'NOT CREATED': 'Waiting for workload object',
+    'REPLICASET CREATING': 'Controller creating replicas',
+    'POD SCHEDULING': 'Waiting for node assignment',
+    'CONTAINER STARTING': 'Starting container',
+    'READY': 'Ready for traffic',
+  }
 
   return <main className="architecture-page">
     <header className="architecture-header">
@@ -262,7 +276,7 @@ export default function ClusterArchitecture({ onComplete, passed, onPass }: { on
                   <ComponentButton node={node + 1} name="CRI runtime" icon={<Container/>} selected={selected} active={node === 0 && isActive('CRI runtime')} source={node === 0 && isSource('CRI runtime')} destination={node === 0 && isDestination('CRI runtime')} onSelect={setSelected}/>
                   <ComponentButton node={node + 1} name="CNI networking" icon={<Network/>} selected={selected} active={node === 0 && isActive('CNI networking')} source={node === 0 && isSource('CNI networking')} destination={node === 0 && isDestination('CNI networking')} onSelect={setSelected}/>
                 </div>
-                <button data-component={`Pod app-${node + 1}`} data-flow-id={`Pod app-${node + 1}`} className={`workload-pod workload-${workloadState.toLowerCase().replace(/ /g, '-')} ${isActive('Pod app-1') && node === 0 ? 'component-active' : ''}`} onClick={() => setSelected('Pod')} aria-label={`Pod lifecycle state: ${workloadState}`}><KubernetesIcon src={kubernetesIcons.pod}/><span><b>{phase >= 2 ? `Pod · app-${node + 1}` : 'Pod · not created'}</b><small>{workloadState === 'NOT CREATED' ? 'Waiting for workload object' : 'Ready for traffic'}</small></span><span className="pod-health">{workloadState}</span></button>
+                <button data-component={`Pod app-${node + 1}`} data-flow-id={`Pod app-${node + 1}`} className={`workload-pod workload-${workloadState.toLowerCase().replace(/ /g, '-')} ${isActive('Pod app-1') && node === 0 ? 'component-active' : ''}`} onClick={() => setSelected('Pod')} aria-label={`Pod lifecycle state: ${workloadState}`}><KubernetesIcon src={kubernetesIcons.pod}/><span><b>{phase >= 2 ? `Pod · app-${node + 1}` : 'Pod · not created'}</b><small>{workloadDetail[workloadState]}</small></span><span className="pod-health">{workloadState}</span></button>
               </section>)}
             </div>
           </section>
@@ -271,9 +285,9 @@ export default function ClusterArchitecture({ onComplete, passed, onPass }: { on
         <div className="topology-explainer">
           <p><b>CONTROL</b> kubectl, the scheduler, controllers and kubelets use the API server; only the API server accesses etcd.</p>
           <p><b>TRAFFIC</b> Client → Service forwarding (kube-proxy / eBPF) → ready Pod. Packets do not pass through the API server.</p>
-          <p><b>POD SETUP</b> Kubelet asks the runtime to start Pods; the runtime invokes CNI for networking. Play the steps to see the details.</p>
+          <p><b>POD SETUP</b> Kubelet asks the runtime to start Pods; the runtime invokes CNI for networking. The illustrative sequence loops; pause or select a step to inspect it.</p>
         </div>
-        <div className="communication-section" aria-live="polite">
+        <div className="communication-section" aria-live={playing ? 'off' : 'polite'}>
           <div className="communication-heading"><div><Network size={16}/><b>{phase === 6 ? 'APPLICATION TRAFFIC' : 'WORKLOAD CREATION'}</b></div><span>STEP {String(phase + 1).padStart(2, '0')} / {String(phases.length).padStart(2, '0')}</span></div>
           <div className={`architecture-phase-detail ${phase === 6 ? 'phase-data' : 'phase-control'}`} key={`detail-${phase}`}>
             <span className="route-step-number">{String(phase + 1).padStart(2, '0')}</span>
