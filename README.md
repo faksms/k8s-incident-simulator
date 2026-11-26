@@ -17,7 +17,7 @@ Start with the architecture map, then explore the foundation topics using their 
 
 Open **Explore the topic index** on any course lesson to browse chapters and nested subtopics or search concepts. Next and previous follow that chapter order. The learning path includes original walkthroughs covering cluster setup, namespaces, service discovery, storage, configuration, StatefulSets, the API, RBAC, security, and terminology alongside the existing simulations. The DNS and storage labs model specific examples, not real infrastructure; their assumptions are shown in the lesson. These lessons cover topics also found in Nigel Poulton's *The Kubernetes Book*, without reproducing the book. Consult the [Kubernetes documentation](https://kubernetes.io/docs/) for current, version-specific guidance.
 
-Concept-map signals and illustrative paths loop automatically. Use their pause and step controls to inspect them; concept-map signals do not change workload settings. Automatic playback is disabled when the operating system requests reduced motion.
+Concept maps advance through highlighted components and their explanations automatically; selecting a component or step pauses the walkthrough. Other illustrative paths explain the highlighted stage as their markers move. Use the pause and step controls to inspect them; these signals do not change workload settings. Automatic playback is disabled when the operating system requests reduced motion.
 
 In incident practice, investigate simulated evidence, diagnose the cause, and choose a recovery action. Guided mode includes prompts; in independent mode, use **Reveal hint** when needed. All cluster commands are simulated; no real cluster or credentials are used.
 

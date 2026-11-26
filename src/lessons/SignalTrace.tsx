@@ -4,21 +4,23 @@ import { motion, useReducedMotion } from 'framer-motion'
 import StepSequenceControls from './StepSequenceControls'
 import './SignalTrace.css'
 
+type TraceStep = { label: string; detail: string }
 type SignalTraceProps = {
   title: string
-  steps: string[]
-  onSelect?: (step: string) => void
+  steps: TraceStep[]
   playToken?: number
 }
 
-export default function SignalTrace({ title, steps, onSelect, playToken }: SignalTraceProps) {
+const stepInterval = 7000
+
+export default function SignalTrace({ title, steps, playToken }: SignalTraceProps) {
   const [active, setActive] = useState(0)
   const reducedMotion = useReducedMotion()
   const [playing, setPlaying] = useState(() => !reducedMotion)
 
   useEffect(() => {
     if (!playing) return
-    const timer = window.setTimeout(() => setActive(current => (current + 1) % steps.length), 2800)
+    const timer = window.setTimeout(() => setActive(current => (current + 1) % steps.length), stepInterval)
     return () => window.clearTimeout(timer)
   }, [playing, active, steps.length])
 
@@ -48,7 +50,6 @@ export default function SignalTrace({ title, steps, onSelect, playToken }: Signa
   function select(index: number) {
     setPlaying(false)
     setActive(index)
-    onSelect?.(steps[index])
   }
 
   function previous() {
@@ -73,10 +74,10 @@ export default function SignalTrace({ title, steps, onSelect, playToken }: Signa
     <div className="signal-route">
       <span className="signal-route-line"/>
       <motion.i className="signal-packet" animate={{ left: `${position}%` }} transition={reducedMotion ? { duration: 0 } : { type: 'spring', stiffness: 100, damping: 18 }}/>
-      {steps.map((step, index) => <button key={`${step}-${index}`} className={`signal-step ${index === active ? 'signal-step-active' : ''} ${index < active ? 'signal-step-done' : ''}`} onClick={() => select(index)} aria-current={index === active ? 'step' : undefined}><span>{String(index + 1).padStart(2, '0')}</span><b>{step}</b>{index < steps.length - 1 && <ArrowRight className="signal-step-arrow" size={13}/>}</button>)}
+      {steps.map((step, index) => <button key={index} className={`signal-step ${index === active ? 'signal-step-active' : ''} ${index < active ? 'signal-step-done' : ''}`} onClick={() => select(index)} aria-current={index === active ? 'step' : undefined}><span>{String(index + 1).padStart(2, '0')}</span><b>{step.label}</b>{index < steps.length - 1 && <ArrowRight className="signal-step-arrow" size={13}/>}</button>)}
     </div>
-    <p className="signal-step-caption" aria-live={playing ? 'off' : 'polite'}>{steps[active]}</p>
-    <p className="signal-step-caption">Illustrative loop and workload glow; use the simulation controls to change state.</p>
-    <StepSequenceControls active={active} total={steps.length} playing={playing} intervalMs={2800} onPrevious={previous} onNext={next} onToggle={() => setPlaying(value => !value)} onReset={reset} compact />
+    <div className="signal-narration" aria-live={playing ? 'off' : 'polite'}><b>WHAT THE HIGHLIGHT SHOWS · {steps[active].label}</b><p>{steps[active].detail}</p></div>
+    <p className="signal-step-caption">The moving marker illustrates this concept; use the simulation controls to change the example state.</p>
+    <StepSequenceControls active={active} total={steps.length} playing={playing} intervalMs={stepInterval} onPrevious={previous} onNext={next} onToggle={() => setPlaying(value => !value)} onReset={reset} compact />
   </section>
 }

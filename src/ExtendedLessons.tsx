@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { motion, useReducedMotion } from 'framer-motion'
 import { Activity, ArrowRight, Boxes, CirclePause, Database, FileCode2, Globe, KeyRound, Network, Play, RotateCcw, Server, ShieldCheck } from 'lucide-react'
 import type { Material } from './LearningMaterials'
@@ -246,6 +246,18 @@ export function ExtendedLessonScene({ lesson }: { lesson: ExtendedLesson }) {
   const [step, setStep] = useState(0)
   const reducedMotion = useReducedMotion()
   const [playing, setPlaying] = useState(() => !reducedMotion)
+  useEffect(() => {
+    if (reducedMotion) setPlaying(false)
+  }, [reducedMotion])
+  useEffect(() => {
+    if (!playing || reducedMotion) return
+    const timer = window.setTimeout(() => setStep(current => (current + 1) % lesson.steps.length), 8000)
+    return () => window.clearTimeout(timer)
+  }, [playing, reducedMotion, step, lesson.steps.length])
+  function selectStep(index: number) {
+    setPlaying(false)
+    setStep(index)
+  }
   const diagramIcons: Record<string, [typeof Server, typeof Server, typeof Server]> = {
     'getting-started': [Server, FileCode2, Activity],
     namespaces: [Boxes, FileCode2, ShieldCheck],
@@ -262,25 +274,25 @@ export function ExtendedLessonScene({ lesson }: { lesson: ExtendedLesson }) {
   return <div className="explore-scene">
     <div className="explore-heading"><span>INTERACTIVE CONCEPT MAP</span><span>{step + 1} / {lesson.steps.length}</span></div>
     <h2>Explore the flow</h2>
-    <p>Select a component to inspect its role. The moving signals illustrate the relationship between concepts.</p>
+    <p>Follow the highlighted component and the explanation below. Moving signals illustrate connections, not live cluster traffic. Select a component to pause and inspect it.</p>
     <div className={`explore-diagram ${playing && !reducedMotion ? 'diagram-playing' : ''}`} aria-label={`${lesson.title} concept map`}>
       {lesson.diagram.nodes.map((node, index) => {
         const Icon = icons[index]
         return <div className="explore-diagram-part" key={node}>
-          <button className={`explore-node ${step === index ? 'explore-node-active' : ''}`} onClick={() => setStep(index)} aria-pressed={step === index}>
+          <button className={`explore-node ${step === index ? 'explore-node-active' : ''}`} onClick={() => selectStep(index)} aria-pressed={step === index}>
             <span className="explore-node-icon"><Icon size={21}/></span><b>{node}</b><small>0{index + 1} · INSPECT</small>
           </button>
           {index < lesson.diagram.links.length && <div className="explore-link" aria-hidden="true"><span className="explore-link-line"><i/><i/></span><small>{lesson.diagram.links[index]}</small></div>}
         </div>
       })}
     </div>
-    <div className="explore-diagram-toolbar"><span><i/> {playing && !reducedMotion ? 'ILLUSTRATIVE SIGNALS LIVE' : 'SIGNALS PAUSED'}</span><button type="button" onClick={() => setPlaying(value => !value)} disabled={Boolean(reducedMotion)}>{playing && !reducedMotion ? <CirclePause size={15}/> : <Play size={15}/>} {playing && !reducedMotion ? 'Pause signals' : reducedMotion ? 'Reduced motion enabled' : 'Play signals'}</button></div>
-    <div className="explore-steps" aria-label="Walkthrough steps">
-      {lesson.steps.map((item, index) => <button key={item.title} className={index === step ? 'active' : ''} onClick={() => setStep(index)} aria-pressed={index === step}><span>{String(index + 1).padStart(2, '0')}</span><b>{item.title}</b><ArrowRight size={16}/></button>)}
-    </div>
-    <motion.div key={step} className="explore-detail" initial={reducedMotion ? false : { opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} aria-live="polite">
-      <small>STEP {step + 1} · {lesson.title}</small><h3>{lesson.steps[step].title}</h3><p>{lesson.steps[step].detail}</p>
+    <div className="explore-diagram-toolbar"><span><i/> {playing && !reducedMotion ? 'WALKTHROUGH PLAYING' : 'WALKTHROUGH PAUSED'}</span><button type="button" onClick={() => setPlaying(value => !value)} disabled={Boolean(reducedMotion)}>{playing && !reducedMotion ? <CirclePause size={15}/> : <Play size={15}/>} {playing && !reducedMotion ? 'Pause walkthrough' : reducedMotion ? 'Reduced motion enabled' : 'Play walkthrough'}</button></div>
+    <motion.div key={step} className="explore-detail" initial={reducedMotion ? false : { opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} aria-live={playing ? 'off' : 'polite'}>
+      <small>HIGHLIGHTED: {lesson.diagram.nodes[step]} · STEP {step + 1}</small><h3>{lesson.steps[step].title}</h3><p>{lesson.steps[step].detail}</p>
     </motion.div>
-    <div className="explore-actions"><button onClick={() => setStep(0)}><RotateCcw size={15}/> Start over</button><button onClick={() => setStep((step + 1) % lesson.steps.length)}>{step === lesson.steps.length - 1 ? 'Replay flow' : 'Next step'} <ArrowRight size={15}/></button></div>
+    <div className="explore-steps" aria-label="Walkthrough steps">
+      {lesson.steps.map((item, index) => <button key={item.title} className={index === step ? 'active' : ''} onClick={() => selectStep(index)} aria-pressed={index === step}><span>{String(index + 1).padStart(2, '0')}</span><b>{item.title}</b><ArrowRight size={16}/></button>)}
+    </div>
+    <div className="explore-actions"><button onClick={() => selectStep(0)}><RotateCcw size={15}/> Start over</button><button onClick={() => selectStep((step + 1) % lesson.steps.length)}>{step === lesson.steps.length - 1 ? 'Replay flow' : 'Next step'} <ArrowRight size={15}/></button></div>
   </div>
 }

@@ -88,7 +88,12 @@ export default function ResourceQuotaLesson({ onSelect }: { onSelect: (name: str
         <button className="quota-apply" onClick={applyWorkload} disabled={pendingReplicas===0}><Plus size={16}/> {pendingReplicas===0?'All desired Pods admitted':'Create missing Pods'}</button>
       </section>
     </div>
-    <SignalTrace title="QUOTA ADMISSION PATH" steps={['Deployment requests replicas', 'ReplicaSet creates Pod', 'quota admission checks usage', result?.rejected ? 'Pod rejected · retry later' : result ? 'Pod admitted' : 'waiting for request']} playToken={traceToken}/>
+    <SignalTrace title="QUOTA ADMISSION PATH" steps={[
+      {label:'Deployment requests replicas',detail:`The example Deployment declares ${desired} desired replicas. The controller attempts to create the missing Pods.`},
+      {label:'ReplicaSet creates Pod',detail:`The ReplicaSet sends a separate Pod creation request for each missing replica, with ${podRequests.cpu}m CPU and ${podRequests.memory}Mi memory requested per Pod.`},
+      {label:'quota admission checks usage',detail:"Admission compares each request with the namespace's current usage and hard quota before the Pod is created."},
+      {label:result?.rejected ? 'Pod rejected · retry later' : result ? 'Pod admitted' : 'waiting for request',detail:result ? result.message : 'Choose Create missing Pods to submit the example requests and see the admission result.'},
+    ]} playToken={traceToken}/>
     {result && <div className={`quota-result ${result.accepted ? 'quota-result-accepted' : 'quota-result-denied'}`} role="status"><span>{result.accepted ? <ShieldCheck size={17}/> : <CircleAlert size={17}/>}</span><div><b>{result.accepted ? 'Desired replicas admitted' : 'Some Pod admissions rejected'}</b><p>{result.message}</p><small>{result.admitted} admitted · {result.rejected} rejected · desired {result.attempted}</small></div></div>}
     <p className="quota-note">ResourceQuota checks namespaced objects at admission. Here, each Pod is checked separately: some replicas may be created while later Pods are rejected until quota becomes available.</p>
     <LessonCoach task="Submit the default three-replica workload. Observe partial admission, raise the namespace quota, then create the missing Pod." hint="The namespace already uses 1000m CPU and 1024Mi memory. Each 500m / 512Mi Pod is checked against both hard totals. Two fit; the third exceeds both. A Deployment can exist while its ReplicaSet reports failed Pod creation and retries." complete={objectiveComplete} success="You observed per-Pod quota admission, partial replica creation, and controller recovery after increasing namespace capacity."/>
