@@ -38,6 +38,29 @@ export const learningPaths: LearningPath[] = [
       { id: 'traffic', title: 'Application traffic' },
     ],
   },
+  {
+    id: 'cka', title: 'CKA topic explorer',
+    description: 'Explore cluster administration, scheduling, networking, storage, and troubleshooting.',
+    topics: [
+      { id: 'kubeadm', title: 'Cluster bootstrap' },
+      { id: 'cluster-lifecycle', title: 'Cluster upgrades and availability' },
+      { id: 'cluster-extensions', title: 'Runtime, network and storage interfaces' },
+      { id: 'rbac', title: 'API access and RBAC' },
+      { id: 'helm-kustomize', title: 'Helm and Kustomize' },
+      { id: 'operators', title: 'Custom resources and operators' },
+      { id: 'scheduling', title: 'Scheduling and affinity' },
+      { id: 'autoscaling', title: 'Autoscaling' },
+      { id: 'network-policy', title: 'NetworkPolicy' },
+      { id: 'service-types', title: 'Service types and endpoints' },
+      { id: 'gateway', title: 'Gateway and Ingress' },
+      { id: 'dns', title: 'Service discovery and DNS' },
+      { id: 'provisioning', title: 'Storage provisioning' },
+      { id: 'configuration', title: 'ConfigMaps and Secrets' },
+      { id: 'rollouts', title: 'Rollouts and rollbacks' },
+      { id: 'cluster-troubleshooting', title: 'Cluster troubleshooting' },
+      { id: 'workload-troubleshooting', title: 'Workload troubleshooting' },
+    ],
+  },
 ]
 
 export const serviceLabProgressId = 'practice:service-lab'

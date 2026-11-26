@@ -13,6 +13,7 @@ export type Material = {
   options: string[]
   answer: number
   explanation: string
+  source?: string
 }
 
 export const materials: Record<string, Material> = {
@@ -193,5 +194,6 @@ export default function LearningMaterials({ lessonId, passed, onPass, extraMater
     <div className="materials-concepts">{material.concepts.map(item => <article key={item.term}><h3>{item.term}</h3><p>{item.detail}</p></article>)}</div>
     <section className="materials-example"><header><div><Terminal size={15}/><b>{material.exampleLabel}</b></div><button onClick={copyExample} aria-label="Copy example"><Clipboard size={14}/>{copied ? 'Copied' : 'Copy'}</button></header><pre><code>{material.example}</code></pre>{copyError&&<p className="copy-error">Clipboard permission was unavailable. Select the example text to copy it manually.</p>}</section>
     <section className="materials-check"><div className="check-heading"><span>KNOWLEDGE CHECK</span>{passed&&<b><CircleCheck size={15}/> CHECK PASSED</b>}</div><h3>{material.question}</h3><div className="check-options">{material.options.map((option,index)=><button key={option} className={selected===index?index===material.answer?'answer-correct':'answer-incorrect':''} onClick={()=>answer(index)} aria-pressed={selected===index}><span>{String.fromCharCode(65+index)}</span>{option}</button>)}</div>{selected!==null&&<p aria-live="polite" className={selected===material.answer?'answer-feedback correct':'answer-feedback'}>{selected===material.answer?<Check size={16}/>:<CircleCheck size={16}/>}<span>{selected===material.answer?`That’s right. ${material.explanation}`:'Not quite. Review the notes above and try another answer.'}</span></p>}</section>
+    {material.source && <p className="materials-source">Further reading: <a href={material.source} target="_blank" rel="noreferrer">official documentation</a> (opens in a new tab).</p>}
   </section>
 }

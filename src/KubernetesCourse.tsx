@@ -14,6 +14,7 @@ import { DiscoveryLab, StorageLab } from './lessons/ConceptLabs'
 import LearningMaterials, { materials } from './LearningMaterials'
 import type { Material } from './LearningMaterials'
 import { ExtendedLessonScene, extendedLessons } from './ExtendedLessons'
+import { ckaLessons } from './ckaLessons'
 import { courseChapters, filterTopics, flattenTopics } from './courseCatalog'
 import { incidentTopics } from './App'
 import type { TopicNode } from './courseCatalog'
@@ -33,7 +34,8 @@ const lessons:Lesson[] = [
   {id:'resource-requests',title:'Pod resource requests & limits',subtitle:'08 · SCHEDULING AND RUNTIME',body:'Tune a Pod’s CPU and memory requests and limits. Watch requests determine placement while runtime usage can trigger CPU throttling or a memory OOM kill.',takeaway:'Requests shape scheduling; limits constrain runtime consumption.',Component:ResourceRequestsLesson},
   {id:'resource-quota',title:'Namespace resource quotas',subtitle:'09 · RESOURCE GOVERNANCE',body:'ResourceQuota places hard aggregate limits on namespaced resources. See how the API admission check compares a new workload with the namespace budget before creating Pods.',takeaway:'A workload request is admitted only when all applicable hard quotas have room.',Component:ResourceQuotaLesson},
 ]
-const allLessons = [...lessons, ...extendedLessons]
+const allExtendedLessons = [...extendedLessons, ...ckaLessons]
+const allLessons = [...lessons, ...allExtendedLessons]
 const orderedIds = courseChapters.flatMap(chapter => flattenTopics(chapter.topics))
 export const courseLessonIds = allLessons.map(lesson => lesson.id)
 export const initialLessonIndex = allLessons.findIndex(lesson => lesson.id === orderedIds[1])
@@ -83,7 +85,7 @@ export default function KubernetesCourse({index,onIndexChange,passedLessons,onPa
   const selectedControl = useRef<HTMLElement | null>(null)
   const lesson = allLessons[index]
   const standardLesson = lessons[index]
-  const extendedLesson = extendedLessons[index - lessons.length]
+  const extendedLesson = allExtendedLessons[index - lessons.length]
   const Scene = standardLesson?.Component
   const currentPosition = orderedIds.indexOf(lesson.id)
   const currentChapter = courseChapters.find(chapter => flattenTopics(chapter.topics).includes(lesson.id))!

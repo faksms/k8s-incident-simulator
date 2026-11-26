@@ -48,6 +48,7 @@ export default function LearningDashboard({ passed, practiceProgress, lessonIds,
           const next = nextPathTopic(path, passed)
           return <article className="dashboard-card" key={path.id}>
             <BookOpen size={22}/><h3>{path.title}</h3><p>{path.description}</p>
+            {path.id === 'cka' && <p>Introductory topic coverage, not a complete CKA preparation course. The exam is hands-on; this site uses simulations. See the <a href="https://training.linuxfoundation.org/certification/certified-kubernetes-administrator-cka/" target="_blank" rel="noreferrer">official CKA information</a>.</p>}
             <div className="dashboard-count">{count} / {path.topics.length} checks passed</div>
             <progress value={count} max={path.topics.length} aria-label={`${path.title} checks passed`}/>
             <ul>{path.topics.map(topic => <li key={topic.id}><button onClick={() => onTopic(topic.id)}>{passed.has(topic.id) ? <CheckCircle2 size={15}/> : <span aria-hidden="true">○</span>}{topic.title}</button></li>)}</ul>

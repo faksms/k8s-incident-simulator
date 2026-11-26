@@ -5,7 +5,7 @@ import type { Material } from './LearningMaterials'
 import './ExtendedLessons.css'
 
 type Step = { title: string; detail: string }
-type ExtendedLesson = {
+export type ExtendedLesson = {
   id: string
   title: string
   body: string
@@ -269,6 +269,20 @@ export function ExtendedLessonScene({ lesson }: { lesson: ExtendedLesson }) {
     rbac: [KeyRound, ShieldCheck, FileCode2],
     security: [Database, Activity, ShieldCheck],
     terminology: [FileCode2, Boxes, Network],
+    kubeadm: [Server, Activity, Network],
+    'cluster-lifecycle': [Server, Activity, ShieldCheck],
+    'cluster-extensions': [Network, Server, Database],
+    'helm-kustomize': [FileCode2, Boxes, Activity],
+    operators: [FileCode2, Activity, Boxes],
+    scheduling: [FileCode2, Activity, Server],
+    autoscaling: [Activity, Server, Boxes],
+    rollouts: [FileCode2, Boxes, Activity],
+    'service-types': [Globe, Network, Boxes],
+    'network-policy': [ShieldCheck, Network, Boxes],
+    gateway: [Globe, Network, Boxes],
+    provisioning: [FileCode2, Database, Boxes],
+    'cluster-troubleshooting': [Server, Activity, ShieldCheck],
+    'workload-troubleshooting': [Boxes, Activity, FileCode2],
   }
   const icons = diagramIcons[lesson.id]
   return <div className="explore-scene">
