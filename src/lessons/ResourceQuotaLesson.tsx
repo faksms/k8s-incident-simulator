@@ -86,7 +86,7 @@ export default function ResourceQuotaLesson({ onSelect }: { onSelect: (name: str
       </section>
     </div>
     {result && <div className={`quota-result ${result.accepted ? 'quota-result-accepted' : 'quota-result-denied'}`} role="status"><span>{result.accepted ? <ShieldCheck size={17}/> : <CircleAlert size={17}/>}</span><div><b>{result.accepted ? 'Desired replicas admitted' : 'Some Pod admissions rejected'}</b><p>{result.message}</p><small>{result.admitted} admitted · {result.rejected} rejected · desired {result.attempted}</small></div></div>}
-    <p className="quota-note">ResourceQuota checks namespaced objects at admission. Here, each Pod is checked separately: some replicas may be created while later Pods are rejected until quota becomes available.</p>
+    <p className="quota-note">{used.cpu > quota.cpu || used.memory > quota.memory ? 'Current usage is above the new quota. Lowering a quota does not remove existing Pods; new requests are checked against the new limit. ' : ''}ResourceQuota checks namespaced objects at admission. Here, each Pod is checked separately: some replicas may be created while later Pods are rejected until quota becomes available.</p>
     <LessonCoach task="Submit the default three-replica workload. Observe partial admission, raise the namespace quota, then create the missing Pod." hint="The namespace already uses 1000m CPU and 1024Mi memory. Each 500m / 512Mi Pod is checked against both hard totals. Two fit; the third exceeds both. A Deployment can exist while its ReplicaSet reports failed Pod creation and retries." complete={objectiveComplete} success="You observed per-Pod quota admission, partial replica creation, and controller recovery after increasing namespace capacity."/>
   </div>
 }
@@ -94,10 +94,10 @@ export default function ResourceQuotaLesson({ onSelect }: { onSelect: (name: str
 function QuotaGauge({ label, used, requested, hard, unit, percent, onSelect }: { label: string; used: number; requested: number; hard: number; unit: string; percent: number; onSelect: (name: string) => void }) {
   const projected = Math.min(100 - percent, requested / hard * 100)
   const exceedsQuota = used + requested > hard
-  const format = (value: number) => unit === 'Mi' ? `${(value / 1024).toFixed(value % 1024 === 0 ? 0 : 1)}Gi` : `${value}m`
+  const format = (value: number) => unit === 'Mi' ? `${value / 1024}Gi` : `${value}m`
   return <button className="quota-gauge" onClick={() => onSelect(`${label.toLowerCase()} quota`)} aria-label={`${label}: ${format(used)} used of ${format(hard)} hard quota`}>
     <span className="quota-gauge-heading"><b>{label}</b><small>{format(used)} used / {format(hard)} hard</small></span>
     <span className="quota-track"><i style={{ width: `${percent}%` }}/><i className={`quota-projected ${exceedsQuota ? 'quota-over' : ''}`} style={{ left: `${percent}%`, width: `${projected}%` }}/></span>
-    <span className="quota-gauge-foot"><small>{format(requested)} requested</small><small>{Math.max(0, hard - used)} remaining</small></span>
+    <span className="quota-gauge-foot"><small>{format(requested)} requested</small><small>{format(Math.max(0, hard - used))} remaining</small></span>
   </button>
 }

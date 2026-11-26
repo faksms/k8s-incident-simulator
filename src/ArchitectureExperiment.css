@@ -1,0 +1,46 @@
+.architecture-experiment{display:grid;gap:16px;padding:clamp(14px,2vw,24px);border:1px solid #344d63;border-radius:12px;background:#0c1a29;color:#dceaf2}
+.architecture-experiment header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.architecture-experiment header span{color:#85dfbd;font-size:10px;font-weight:700;letter-spacing:.08em}
+.architecture-experiment h2{margin:6px 0;color:#effaf8;font-size:clamp(20px,2.4vw,27px)}
+.architecture-experiment header p,.architecture-experiment-note{margin:0;color:#b9ccd7;font-size:13px;line-height:1.55}
+.architecture-experiment button{min-height:36px;padding:7px 10px;border:1px solid #49667c;border-radius:7px;background:#142b3c;color:#dbebf3;cursor:pointer}
+.architecture-experiment header button{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.architecture-experiment button[aria-pressed=true]{border-color:#75dfba;background:#164033;color:#e5fff3}
+.architecture-experiment button:focus-visible,.architecture-experiment input:focus-visible{outline:2px solid #8cebc8;outline-offset:3px}
+.architecture-experiment-layout{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(210px,.7fr);gap:14px;align-items:start}
+.architecture-experiment-layout>div{min-width:0}
+.architecture-iso{display:block;width:100%;height:auto;min-height:220px;border:1px solid #2d5063;border-radius:10px;background:#071725}
+.architecture-scroll-hint{display:none;margin:0 0 6px;color:#b9ccd7;font-size:12px}
+.architecture-iso-scroll:focus-visible{outline:2px solid #8cebc8;outline-offset:3px}
+.architecture-iso-link{stroke:#526b7a;stroke-width:3;stroke-dasharray:6 6;opacity:.5}
+.architecture-iso-link.control.active{stroke:#78c7ff;opacity:.9}
+.architecture-iso-link.traffic.active{stroke:#65e8b5;opacity:.9}
+.architecture-iso-box{cursor:pointer}
+.architecture-iso-box.unavailable{opacity:.42}
+.architecture-iso-side{stroke:#1d3444;stroke-width:1;opacity:.65}
+.architecture-iso-top{stroke:#d9f9ff;stroke-width:1}
+.architecture-iso-box.selected .architecture-iso-top{stroke:#fff;stroke-width:4}
+.architecture-iso-box text{fill:#fff;font:700 14px system-ui,sans-serif;paint-order:stroke;stroke:#0b1c2a;stroke-width:5px;stroke-linejoin:round;pointer-events:none}
+.architecture-experiment-legend{display:flex;flex-wrap:wrap;gap:15px;margin:9px 0;color:#b7cdd7;font-size:11px}
+.architecture-experiment-legend span{display:flex;align-items:center;gap:6px}
+.architecture-experiment-legend i{width:9px;height:9px;border-radius:50%;background:#78c7ff}
+.architecture-experiment-legend .traffic{background:#65e8b5}.architecture-experiment-legend .unavailable{background:#8c9da7}
+.architecture-experiment-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+.architecture-experiment-metrics div{display:grid;gap:4px;padding:10px;border:1px solid #31546b;border-radius:8px;background:#10293a}
+.architecture-experiment-metrics b{color:#adf1d4;font-size:14px}
+.architecture-experiment-metrics span{color:#b9cad5;font-size:11px}
+.architecture-experiment-result{margin-top:10px;padding:12px;border:1px solid #396d5d;border-radius:8px;background:#112b29}
+.architecture-experiment-result p{margin:6px 0 0;color:#c6d9db;font-size:13px;line-height:1.5}
+.architecture-experiment-controls{display:grid;gap:14px;padding:14px;border:1px solid #31546b;border-radius:10px;background:#102334}
+.architecture-experiment-controls label{display:grid;gap:8px;color:#d6e5ec;font-size:13px}
+.architecture-experiment-controls input{width:100%;accent-color:#69d5aa}
+.architecture-experiment-controls fieldset{display:flex;flex-wrap:wrap;gap:7px;margin:0;padding:10px;border:1px solid #3a5669;border-radius:8px}
+.architecture-experiment-controls legend{padding:0 4px;color:#bbced8;font-size:11px;font-weight:700}
+.architecture-component-picker{display:flex;flex-wrap:wrap;gap:6px}
+.architecture-experiment-note{font-size:12px}
+.architecture-view-switch{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 12px}
+.architecture-view-switch button{min-height:36px;padding:7px 12px;border:1px solid #49667c;border-radius:7px;background:#142b3c;color:#dceaf2;cursor:pointer}
+.architecture-view-switch button[aria-pressed=true]{border-color:#75dfba;background:#164033}
+.architecture-board[hidden],.architecture-map-details[hidden]{display:none}
+@media(max-width:850px){.architecture-experiment-layout{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:520px){.architecture-experiment header{flex-wrap:wrap}.architecture-experiment-metrics{grid-template-columns:1fr}.architecture-scroll-hint{display:block}.architecture-iso-scroll{overflow-x:auto}.architecture-iso{min-width:560px}.architecture-iso-box text{font-size:16px}}

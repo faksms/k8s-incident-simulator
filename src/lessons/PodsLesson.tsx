@@ -52,9 +52,10 @@ export default function PodsLesson({onSelect}:{onSelect:(name:string)=>void}) {
         <p className="pod-explainer" aria-live="polite">{appRunning ? 'The app container is running. Add a helper below to see where it fits.' : 'The app is waiting for the init container to finish its setup.'}</p>
         {extras.init&&<div className="pod-init-sequence"><p aria-live="polite"><b>{step+1} / {initSteps.length}</b> {initSteps[step]}</p><StepSequenceControls active={step} total={initSteps.length} playing={playing} onPrevious={()=>{setPlaying(false);setStep(value=>Math.max(0,value-1))}} onNext={()=>{setPlaying(false);setStep(value=>Math.min(initSteps.length-1,value+1))}} onToggle={()=>{if(step===initSteps.length-1)setStep(0);setPlaying(value=>!value)}} onReset={()=>{setPlaying(false);setStep(0)}} compact/></div>}
         <div className="pod-actions">
-          <button className={extras.init?'action-active':''} onClick={()=>toggle('init')}>{extras.init?'Remove':'Add'} init container</button>
-          <button className={extras.sidecar?'action-active':''} onClick={()=>toggle('sidecar')}>{extras.sidecar?'Remove':'Add'} sidecar</button>
-          <button className={extras.ambassador?'action-active':''} onClick={()=>toggle('ambassador')}>{extras.ambassador?'Remove':'Add'} ambassador</button>
+          <button aria-pressed={extras.init} className={extras.init?'action-active':''} onClick={()=>toggle('init')}>{extras.init?'Remove':'Add'} init container</button>
+          <button aria-pressed={extras.sidecar} className={extras.sidecar?'action-active':''} onClick={()=>toggle('sidecar')}>{extras.sidecar?'Remove':'Add'} sidecar</button>
+          <button aria-pressed={extras.ambassador} className={extras.ambassador?'action-active':''} onClick={()=>toggle('ambassador')}>{extras.ambassador?'Remove':'Add'} ambassador</button>
+          <button onClick={()=>{setExtras({init:false,sidecar:false,ambassador:false});setPlaying(false);setStep(0)}}>Reset Pod example</button>
         </div>
         <LessonCoach task="Add an init container, a sidecar, and an ambassador. Select each one to learn what it does." hint="An init container finishes setup first. A sidecar helps the app while it runs. An ambassador helps the app connect to other services." complete={complete} success="You explored three kinds of helpers inside one Pod."/>
       </div></div>

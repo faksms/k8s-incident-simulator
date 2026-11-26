@@ -5,6 +5,7 @@ import { Activity, ArrowRight, CheckCircle2, ChevronLeft, ChevronRight, CircleHe
 import LessonCoach from './lessons/LessonCoach'
 import StepSequenceControls from './lessons/StepSequenceControls'
 import LearningMaterials from './LearningMaterials'
+import ArchitectureExperiment from './ArchitectureExperiment'
 import { pathSegments, routeBetween } from './architectureRouting'
 import type { RoutingPort, RoutingRect, RoutingSegment } from './architectureRouting'
 import './ClusterArchitecture.css'
@@ -70,6 +71,7 @@ export default function ClusterArchitecture({ onComplete, onPractical, onDashboa
   const [phase, setPhase] = useState(0)
   const [playing, setPlaying] = useState(() => !reducedMotion)
   const [selected, setSelected] = useState('')
+  const [diagramView, setDiagramView] = useState<'experiment' | 'map'>('experiment')
   const [legIndex, setLegIndex] = useState(0)
   const mapRef = useRef<HTMLDivElement>(null)
   const [flowGeometry, setFlowGeometry] = useState<{ width:number; height:number; path:string; color:string }>({ width:0, height:0, path:'', color:'#34d399' })
@@ -84,6 +86,7 @@ export default function ClusterArchitecture({ onComplete, onPractical, onDashboa
   }, [reducedMotion])
 
   useEffect(() => {
+    if (diagramView !== 'map') return
     function measureActiveFlow() {
       const map = mapRef.current
       if (!map) return
@@ -153,10 +156,10 @@ export default function ClusterArchitecture({ onComplete, onPractical, onDashboa
       window.removeEventListener('resize', measureActiveFlow)
       observer?.disconnect()
     }
-  }, [phase, legIndex, stepColor])
+  }, [phase, legIndex, stepColor, diagramView])
 
   useEffect(() => {
-    if (!playing) return
+    if (!playing || diagramView !== 'map') return
     const timer = window.setTimeout(() => {
       if (legIndex < flow.length - 1) {
         setLegIndex(value => value + 1)
@@ -171,7 +174,7 @@ export default function ClusterArchitecture({ onComplete, onPractical, onDashboa
       setLegIndex(0)
     }, 1400)
     return () => window.clearTimeout(timer)
-  }, [playing, phase, legIndex, flow.length])
+  }, [playing, phase, legIndex, flow.length, diagramView])
 
   function choosePhase(index: number) {
     setPhase(index)
@@ -230,10 +233,12 @@ export default function ClusterArchitecture({ onComplete, onPractical, onDashboa
 
       <section className="beginner-guide" aria-label="Getting started">
         <div><b>First, the basics</b><p>A <strong>container</strong> packages an application. A <strong>Pod</strong> is the unit Kubernetes runs; a <strong>node</strong> is a computer that runs Pods. A <strong>cluster</strong> is the group of computers managed together.</p></div>
-        <div><b>How to learn here</b><p>Choose a step or press Play, select components to learn what they do, and try the practice task and knowledge check below. Continue whenever you are ready.</p><div className="architecture-learning-actions"><button className="architecture-skip" onClick={onDashboard}>Explore learning paths <ArrowRight size={16}/></button><button className="architecture-skip" onClick={onPractical}>Try the simulated terminal lab <ArrowRight size={16}/></button></div></div>
+        <div><b>How to learn here</b><p>Try the cluster experiment, or switch to the workflow map to follow its steps. Select components to learn what they do, then try the knowledge check below.</p><div className="architecture-learning-actions"><button className="architecture-skip" onClick={onDashboard}>Explore learning paths <ArrowRight size={16}/></button><button className="architecture-skip" onClick={onPractical}>Try the simulated terminal lab <ArrowRight size={16}/></button></div></div>
       </section>
 
-      <section className="architecture-board" aria-label="Interactive Kubernetes architecture diagram">
+      <div className="architecture-view-switch" aria-label="Architecture view"><button type="button" aria-pressed={diagramView === 'experiment'} onClick={() => setDiagramView('experiment')}>Cluster experiment</button><button type="button" aria-pressed={diagramView === 'map'} onClick={() => setDiagramView('map')}>Workflow map</button></div>
+      <div hidden={diagramView !== 'experiment'}><ArchitectureExperiment/></div>
+      <section className="architecture-board" aria-label="Interactive Kubernetes architecture diagram" hidden={diagramView !== 'map'}>
         <div className="board-topline"><span><Activity size={15}/> INTERACTIVE CLUSTER MAP</span><span>DOTTED: CONNECTIONS <span aria-hidden="true">·</span> SOLID: CURRENT STEP</span></div>
         <div ref={mapRef} className={`architecture-map flow-dimming map-phase-${phase}`}>
           {topologyGeometry.lines.length > 0 && <svg className="k8s-static-topology" viewBox={`0 0 ${topologyGeometry.width} ${topologyGeometry.height}`} preserveAspectRatio="none" aria-hidden="true">
@@ -302,10 +307,11 @@ export default function ClusterArchitecture({ onComplete, onPractical, onDashboa
         </div>
       </section>
 
-      <LessonCoach task="Select the component that forwards Service traffic to a ready Pod." hint="Look on a worker node for kube-proxy / eBPF. It implements Service forwarding in the data plane; the API server stores configuration but does not carry application packets." complete={selected==='kube-proxy / eBPF'} success="Correct: Service forwarding is performed by the cluster data plane, not by etcd or the API server."/>
+      <div className="architecture-map-details" hidden={diagramView !== 'map'}><LessonCoach task="Select the component that forwards Service traffic to a ready Pod." hint="Look on a worker node for kube-proxy / eBPF. It implements Service forwarding in the data plane; the API server stores configuration but does not carry application packets." complete={selected==='kube-proxy / eBPF'} success="Correct: Service forwarding is performed by the cluster data plane, not by etcd or the API server."/>
       <div className="architecture-bottom">
         <div className="component-inspector"><CircleHelp size={17}/><span>{selected ? <><b>{selected}</b>{componentInfo[selected] ?? 'A component that helps manage or run the cluster.'}</> : 'Select a component in the map to learn what it does.'}</span></div>
         <div className="architecture-principle"><ShieldCheck size={16}/><span><b>Important boundary</b> Control traffic goes through the API server. Service packets are data-plane traffic; they do not pass through etcd.</span></div>
+      </div>
       </div>
       <LearningMaterials lessonId="architecture" passed={passed} onPass={onPass}/>
       <footer className="architecture-footer"><span>INTERACTIVE SYSTEMS EXPLAINED · KUBERNETES ARCHITECTURE</span><button onClick={onComplete}>Continue to interactive foundations <ChevronRight size={16}/></button></footer>

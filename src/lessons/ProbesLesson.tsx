@@ -21,6 +21,13 @@ const stages = [
   { title: 'Startup gate repeats', detail: 'The replacement container boots and probes start again before traffic returns.' },
 ]
 
+export function nextProbeStage(stage: number, startupFailure: boolean, readinessFailure: boolean, livenessFailure: boolean) {
+  if (stage === 1 && startupFailure) return 1
+  if (stage === 3 && readinessFailure) return 3
+  if (stage === 7) return livenessFailure ? 8 : 6
+  return stage >= stages.length - 1 ? 0 : stage + 1
+}
+
 export default function ProbesLesson({ onSelect }: { onSelect: (name: string) => void }) {
   const reducedMotion = useReducedMotion()
   const [stage, setStage] = useState(0)
@@ -44,15 +51,7 @@ export default function ProbesLesson({ onSelect }: { onSelect: (name: string) =>
     }, 112)
     const timer = window.setTimeout(() => {
       if (stage === 9) setRestartCount(value => value + 1)
-      setStage(current => {
-        if (current === 1 && startupFailure) return 1
-        if (current === 3 && readinessFailure) return 4
-        if (current === 7 && livenessFailure) return 8
-        if (current === 7) return 6
-        if (current === 9) return 10
-        if (current === 10) return 0
-        return current + 1
-      })
+      setStage(current => nextProbeStage(current, startupFailure, readinessFailure, livenessFailure))
       setCountdown(100)
     }, 2800)
     return () => {
@@ -74,9 +73,15 @@ export default function ProbesLesson({ onSelect }: { onSelect: (name: string) =>
 
   function toggleFailure(type: 'startup' | 'readiness' | 'liveness') {
     setTested(current => new Set(current).add(type))
-    if (type === 'startup') setStartupFailure(value => !value)
-    if (type === 'readiness') setReadinessFailure(value => !value)
-    if (type === 'liveness') setLivenessFailure(value => !value)
+    const active = type === 'startup' ? startupFailure : type === 'readiness' ? readinessFailure : livenessFailure
+    setStartupFailure(type === 'startup' && !active)
+    setReadinessFailure(type === 'readiness' && !active)
+    setLivenessFailure(type === 'liveness' && !active)
+    if (!active) {
+      setStage(type === 'startup' ? 1 : type === 'readiness' ? 3 : 7)
+      setPlaying(false)
+      setCountdown(100)
+    }
   }
 
   function previousStep() {
@@ -89,7 +94,7 @@ export default function ProbesLesson({ onSelect }: { onSelect: (name: string) =>
     setPlaying(false)
     setCountdown(100)
     if (stage === 9) setRestartCount(current => current + 1)
-    setStage(value => value >= stages.length - 1 ? 0 : value + 1)
+    setStage(value => nextProbeStage(value, startupFailure, readinessFailure, livenessFailure))
   }
 
   const startupBlocked = stage === 1 && startupFailure
@@ -113,7 +118,7 @@ export default function ProbesLesson({ onSelect }: { onSelect: (name: string) =>
         <div><small>LIVE SEQUENCE · {String(stage + 1).padStart(2, '0')} / {String(stages.length).padStart(2, '0')}</small><b>{current.title}</b></div>
         <span className="probe-phase-status" style={{ '--step-progress': `${countdown}%` } as CSSProperties}> 
           <span className="probe-countdown"/> 
-          {killed ? 'CONTAINER KILLED' : restarting ? 'RESTARTING' : startupBlocked ? 'STARTUP BLOCKED' : readinessBlocked ? 'NOT READY' : 'HEALTHY'}
+          {killed ? 'CONTAINER KILLED' : restarting ? 'RESTARTING' : startupBlocked ? 'STARTUP BLOCKED' : readinessBlocked ? 'NOT READY' : stage === 7 && livenessFailure ? 'LIVENESS FAILED' : stage < 4 ? 'STARTING' : 'HEALTHY'}
         </span>
       </header>
 
@@ -133,25 +138,25 @@ export default function ProbesLesson({ onSelect }: { onSelect: (name: string) =>
 
           <div className="probe-pod-content">
             <div className="container-column">
-              <motion.div className={`app-container-monitor ${killed ? 'container-killed' : restarting ? 'container-restarting' : ''} ${stage === 0 ? 'container-booting' : ''}`} onClick={() => onSelect('Application container')} animate={animateSignals && killed ? { opacity: [.2, .55, .2] } : animateSignals && restarting ? { scale: [.96, 1, .96] } : { opacity: 1, scale: 1 }} transition={{ duration: 1, repeat: animateSignals && (killed || restarting) ? Infinity : 0 }}>
+              <motion.button type="button" className={`app-container-monitor ${killed ? 'container-killed' : restarting ? 'container-restarting' : ''} ${stage === 0 ? 'container-booting' : ''}`} onClick={() => onSelect('Application container')} animate={animateSignals && killed ? { opacity: [.2, .55, .2] } : animateSignals && restarting ? { scale: [.96, 1, .96] } : { opacity: 1, scale: 1 }} transition={{ duration: 1, repeat: animateSignals && (killed || restarting) ? Infinity : 0 }}>
                 <span className="container-status-icon">{killed ? '×' : restarting ? '↻' : '◆'}</span>
                 <div><b>api-container</b><small>{killed ? 'terminated' : restarting ? 'starting process' : stage === 0 ? 'booting...' : 'process running'}</small></div>
                 <span className="container-port">:8080</span>
-              </motion.div>
+              </motion.button>
             </div>
 
             <div className="probe-rail">
-              <motion.div className={`parallel-probe startup-probe ${stage === 1 ? 'probe-active' : ''} ${startupBlocked ? 'probe-failed' : ''} ${startupPassed ? 'probe-passed' : ''}`} onClick={() => onSelect('Startup probe')} animate={animateSignals && startupBlocked ? { scale: [1, .98, 1] } : { scale: 1 }} transition={{ duration: .8, repeat: animateSignals && startupBlocked ? Infinity : 0 }}>
+              <motion.button type="button" className={`parallel-probe startup-probe ${stage === 1 ? 'probe-active' : ''} ${startupBlocked ? 'probe-failed' : ''} ${startupPassed ? 'probe-passed' : ''}`} onClick={() => onSelect('Startup probe')} animate={animateSignals && startupBlocked ? { scale: [1, .98, 1] } : { scale: 1 }} transition={{ duration: .8, repeat: animateSignals && startupBlocked ? Infinity : 0 }}>
                 <span className="probe-icon"><Rocket size={14}/></span><div><b>Startup probe</b><small>/started</small></div><span className="probe-result">{startupBlocked ? 'FAIL' : startupPassed ? 'PASS' : stage === 1 ? 'CHECK' : 'WAIT'}</span>
-              </motion.div>
+              </motion.button>
 
-              <motion.div className={`parallel-probe readiness-probe ${stage === 3 ? 'probe-active' : ''} ${readinessBlocked ? 'probe-failed' : ''} ${readinessPassed ? 'probe-passed' : ''}`} onClick={() => onSelect('Readiness probe')} animate={animateSignals && readinessBlocked ? { scale: [1, .98, 1] } : { scale: 1 }} transition={{ duration: .8, repeat: animateSignals && readinessBlocked ? Infinity : 0 }}>
+              <motion.button type="button" className={`parallel-probe readiness-probe ${stage === 3 ? 'probe-active' : ''} ${readinessBlocked ? 'probe-failed' : ''} ${readinessPassed ? 'probe-passed' : ''}`} onClick={() => onSelect('Readiness probe')} animate={animateSignals && readinessBlocked ? { scale: [1, .98, 1] } : { scale: 1 }} transition={{ duration: .8, repeat: animateSignals && readinessBlocked ? Infinity : 0 }}>
                 <span className="probe-icon"><HeartPulse size={14}/></span><div><b>Readiness probe</b><small>/ready</small></div><span className="probe-result">{readinessBlocked ? 'NOT READY' : readinessPassed ? 'READY' : stage === 3 ? 'CHECK' : 'GATED'}</span>
-              </motion.div>
+              </motion.button>
 
-              <motion.div className={`parallel-probe liveness-probe ${stage === 6 || stage === 7 ? 'probe-active' : ''} ${stage === 7 && livenessFailure ? 'probe-failed' : ''}`} onClick={() => onSelect('Liveness probe')} animate={animateSignals && stage === 7 && livenessFailure ? { scale: [1, .98, 1] } : { scale: 1 }} transition={{ duration: .8, repeat: animateSignals && stage === 7 && livenessFailure ? Infinity : 0 }}>
-                <span className="probe-icon"><RefreshCw size={14}/></span><div><b>Liveness probe</b><small>/healthz</small></div><span className="probe-result">{stage === 7 && livenessFailure ? 'KILL' : stage >= 6 ? 'HEALTHY' : 'GATED'}</span>
-              </motion.div>
+              <motion.button type="button" className={`parallel-probe liveness-probe ${stage === 6 || stage === 7 ? 'probe-active' : ''} ${stage === 7 && livenessFailure ? 'probe-failed' : ''}`} onClick={() => onSelect('Liveness probe')} animate={animateSignals && stage === 7 && livenessFailure ? { scale: [1, .98, 1] } : { scale: 1 }} transition={{ duration: .8, repeat: animateSignals && stage === 7 && livenessFailure ? Infinity : 0 }}>
+                <span className="probe-icon"><RefreshCw size={14}/></span><div><b>Liveness probe</b><small>/healthz</small></div><span className="probe-result">{stage === 7 && livenessFailure ? 'FAIL' : stage === 6 || stage === 7 ? 'HEALTHY' : 'GATED'}</span>
+              </motion.button>
             </div>
           </div>
 
@@ -164,17 +169,17 @@ export default function ProbesLesson({ onSelect }: { onSelect: (name: string) =>
       </div>
 
       <motion.div key={current.title} className={`probe-explanation ${startupBlocked || readinessBlocked || killed ? 'probe-explanation-fail' : ''}`} initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} aria-live={playing ? 'off' : 'polite'}>
-        <i/><div><b>{current.title}</b><p>{startupBlocked ? 'Startup has not passed. Readiness and liveness remain gated; this Pod is not eligible for normal Service traffic.' : readinessBlocked ? 'Readiness failed. The container remains running; its EndpointSlice entry can remain with ready=false, so normal Service traffic does not use it.' : killed ? 'Liveness failed. The container is killed and restarted in the same Pod sandbox; the Pod IP remains 10.244.1.8.' : current.detail}</p></div>
+        <i/><div><b>{current.title}</b><p>{startupBlocked ? 'Startup has not passed. Readiness and liveness remain gated; this Pod is not eligible for normal Service traffic.' : readinessBlocked ? 'Readiness failed. The container remains running; its EndpointSlice entry can remain with ready=false, so normal Service traffic does not use it.' : stage === 7 && livenessFailure ? 'The liveness check failed in this example. Continue to see the restart branch.' : killed ? 'Liveness failed. The container is killed and restarted in the same Pod sandbox; the Pod IP remains 10.244.1.8.' : current.detail}</p></div>
         <span>{restartCount ? `RESTART #${restartCount}` : 'RESTART #0'}</span>
       </motion.div>
     </motion.section>
 
     <div className="probe-failure-controls">
-      <button className={startupFailure ? 'failure-active' : ''} onClick={() => toggleFailure('startup')}><Rocket size={14}/> Startup failure</button>
-      <button className={readinessFailure ? 'failure-active' : ''} onClick={() => toggleFailure('readiness')}><HeartPulse size={14}/> Readiness failure</button>
-      <button className={livenessFailure ? 'failure-active' : ''} onClick={() => toggleFailure('liveness')}><RefreshCw size={14}/> Liveness / kill</button>
+      <button aria-pressed={startupFailure} className={startupFailure ? 'failure-active' : ''} onClick={() => toggleFailure('startup')}><Rocket size={14}/> Startup failure</button>
+      <button aria-pressed={readinessFailure} className={readinessFailure ? 'failure-active' : ''} onClick={() => toggleFailure('readiness')}><HeartPulse size={14}/> Readiness failure</button>
+      <button aria-pressed={livenessFailure} className={livenessFailure ? 'failure-active' : ''} onClick={() => toggleFailure('liveness')}><RefreshCw size={14}/> Liveness / kill</button>
     </div>
-
+    <p className="probe-model-note">This simplified example pauses at a failed startup or readiness check so you can compare them. In a real Pod, repeated startup failures can restart the container after the configured threshold. Liveness restarts also depend on probe thresholds and restart policy.</p>
     <LessonCoach task="Watch the boot lifecycle, then trigger startup, readiness, or liveness failures and see which traffic branch changes." hint="Startup gates the other probes. Readiness affects endpoint eligibility. Liveness kills and restarts the container while preserving the Pod IP." complete={tested.size === 3} success="You compared startup gating, traffic readiness, and container recovery."/>
   </div>
 }

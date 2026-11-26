@@ -27,6 +27,14 @@ The CKA topic explorer adds introductory walkthroughs on kubeadm, cluster mainte
 
 Each topic includes an interactive example tailored to its concept. Change settings and compare outcomes, including in the DNS, storage, RBAC, scheduling, and rollout labs. Guided “Try it” tasks explain a specific interaction and report when the example goal is reached; they do not prove mastery. The Pod lesson keeps its containers, shared resources, and controls together. These examples are simplified and do not change a real cluster. Automatic animation is disabled when the operating system requests reduced motion.
 
+The architecture page offers an isometric cluster experiment alongside the original workflow map. In its simplified outage example, existing Service traffic may continue when the API is unreachable only if the data plane retains usable configuration and the selected backends are usable. The angle control changes the illustration; it is not a real cluster or a full 3D environment.
+
+The Services lesson includes a traffic experiment: adjust incoming demand, estimated capacity, and Pod readiness or labels. Its equal-distribution, fixed-capacity calculation is an illustration, not a benchmark, measured cluster traffic, or a guarantee of how Kubernetes forwards connections.
+
+The Service types and Gateway examples show the selected request path; the namespace, scheduling, StatefulSet, operator, security, and terminology examples show their own state changes. The Helm/Kustomize preview is an abbreviated manifest, not an applied resource.
+
+The request journey lets learners compare a non-matching route with a Service that has no Ready backend. The probe example pauses at a failed startup or readiness check for comparison; real failure thresholds and restart policies also matter. The topology example uses three Pod slots per node and includes failed domains in its simplified skew calculation, so it is not a full Kubernetes scheduler.
+
 In incident practice, investigate simulated evidence, diagnose the cause, and review a recovery action. Guided mode includes prompts; independent mode hides the incident title and detailed summary until diagnosis, and offers **Reveal hint**. The first incident models a recovery and verification; the others review an action without applying or verifying it. Related lessons link to incidents where available. All cluster commands are simulated; no real cluster or credentials are used.
 
 Includes 13 scenarios: OOMKilled, ImagePullBackOff, DNS failure, node memory and disk pressure, readiness/liveness probe failures, unreachable service, bad ingress, maxed HPA, expired TLS, stuck rollout, and Helm upgrade failure.

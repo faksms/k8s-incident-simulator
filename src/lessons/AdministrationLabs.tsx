@@ -49,6 +49,7 @@ export function KubeadmLab() {
     </div>
     <div className="lab-flow" aria-label="Bootstrap outcomes">
       <Card title="Control plane" detail="Prepared hosts and successful init" value={result.controlPlane ? 'INITIALIZED' : 'NOT INITIALIZED'} good={result.controlPlane}/>
+      <div className={`lab-link ${result.workerJoined ? 'path-ready' : 'path-blocked'}`}><span>JOIN</span></div>
       <Card title="Worker" detail="Joining is separate from network installation" value={result.workerJoined ? 'JOINED' : 'NOT JOINED'} good={result.workerJoined}/>
       <Card title="Pod network" detail="Provided by a compatible add-on" value={result.networkConfigured ? 'INSTALLED' : 'NOT INSTALLED'} good={result.networkConfigured}/>
     </div>
@@ -79,6 +80,7 @@ export function ClusterLifecycleLab() {
     <div className="lab-flow" aria-label="Etcd quorum and safeguards">
       {[1, 2, 3].map(n => <Card key={n} title={`etcd member ${n}`} detail={n <= r.remaining ? 'Available' : 'Unavailable'} value={n <= r.remaining ? 'ONLINE' : 'OFFLINE'} good={n <= r.remaining}/>)}
     </div>
+    <div className="quorum-status" role="img" aria-label={`${r.remaining} available etcd members; 2 of 3 needed for quorum`}><span>AVAILABLE MEMBERS</span><meter min={0} max={3} low={2} optimum={3} value={r.remaining}/><b>{r.remaining} available · 2 needed for quorum</b></div>
     <Result good={r.quorum && r.backupReady && r.drainAllowed} title={`${r.remaining} of 3 members available · ${r.quorum ? 'quorum remains' : 'quorum lost'}`}>
       {r.quorum ? 'A majority of two is available.' : 'One member is not a majority; etcd cannot make normal progress.'} {r.backupReady ? 'A tested backup is available.' : 'High availability is not a backup; prepare and test etcd recovery.'} {r.drainAllowed ? 'The example PDB permits eviction.' : 'The PDB blocks this example eviction; drain must wait.'}
     </Result>
@@ -104,9 +106,9 @@ export function ClusterExtensionsLab() {
       <Choice label="CSI DRIVER WORKING" value={s.csi} options={yesNo} onChange={csi => set({ ...s, csi })}/>
     </div>
     <div className="lab-flow" aria-label="Integration diagnostics">
-      <Card title="CRI · containers" detail="Kubelet talks to the runtime" value={r.runtime ? 'RUNTIME AVAILABLE' : 'RUNTIME UNAVAILABLE'} good={r.runtime}/>
-      <Card title="CNI · Pod network" detail="Runtime calls plugins for the sandbox" value={r.network ? 'SETUP AVAILABLE' : 'SETUP BLOCKED'} good={r.network}/>
-      <Card title="CSI · volume" detail="Driver integrates the storage system" value={r.storage ? 'DRIVER AVAILABLE' : 'DRIVER UNAVAILABLE'} good={r.storage}/>
+      <Card title="CRI · containers" detail={r.runtime ? 'Kubelet can reach the runtime in this example' : 'A new container cannot be started here'} value={r.runtime ? 'RUNTIME AVAILABLE' : 'RUNTIME UNAVAILABLE'} good={r.runtime}/>
+      <Card title="CNI · Pod network" detail={r.network ? 'Runtime can call the network plugin' : s.cri === 'no' ? 'Runtime unavailable before plugin setup' : 'Plugin unavailable for Pod setup'} value={r.network ? 'SETUP AVAILABLE' : 'SETUP BLOCKED'} good={r.network}/>
+      <Card title="CSI · volume" detail={r.storage ? 'Storage driver is available' : 'Volume setup needs investigation'} value={r.storage ? 'DRIVER AVAILABLE' : 'DRIVER UNAVAILABLE'} good={r.storage}/>
     </div>
     <Result good={r.runtime && r.network && r.storage} title={r.runtime && r.network && r.storage ? 'All three integrations are available' : 'Investigate the affected boundary'}>CRI manages sandboxes and containers, CNI configures Pod networking, and CSI provides storage integration. NetworkPolicy enforcement depends on the network implementation.</Result>
     <LessonCoach task="Turn off the CNI plugin and compare the network with the runtime and storage." hint="Choose No under CNI while leaving CRI and CSI working." complete={s.cri === 'yes' && s.cni === 'no' && s.csi === 'yes'} success="In this example, Pod network setup is blocked while the other integrations remain available."/>
@@ -132,8 +134,10 @@ export function HelmKustomizeLab() {
     </div>
     <div className="lab-flow" aria-label="Manifest preview">
       <Card title={r.source} detail={s.tool === 'helm' ? 'Values fill chart templates' : 'Overlay modifies base manifests'} value={s.environment.toUpperCase()} good/>
+      <div className="lab-link path-ready"><span>RENDER</span></div>
       <Card title="Rendered Deployment" detail="Preview before applying" value={`spec.replicas: ${r.replicas}`} good/>
     </div>
+    <div className="manifest-preview"><b>RENDERED EXAMPLE · NOT APPLIED</b><pre>{`apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: web\nspec:\n  replicas: ${r.replicas}\n  # selector and Pod template omitted`}</pre></div>
     <Result good title={r.history}>{s.tool === 'helm' ? 'Helm tracks a release and its revisions when installed; rendering alone does not create one. Release history is not Deployment rollout history.' : 'Kustomize builds manifests; applying them is a separate operation. It does not itself track Helm-style releases.'}</Result>
     <LessonCoach task="Choose Kustomize and production. Watch the rendered replica count and release-history explanation." hint="Use the Tool and Environment choices above." complete={s.tool === 'kustomize' && s.environment === 'production'} success="The production example renders three replicas, without Helm-style release history."/>
     <p className="lab-source">Simplified simulation, no manifests are applied. Review rendered permissions, cluster-wide resources, ownership and secrets. Rollback may not restore external data. Preview with helm template or kubectl kustomize. <a href="https://kubernetes.io/docs/tasks/manage-kubernetes-objects/kustomization/">Kustomize documentation</a>.</p>
@@ -163,6 +167,7 @@ export function OperatorsLab() {
       <Card title="Custom resource" detail="The desired count is stored only if accepted" value={r.accepted ? `${s.desired} DESIRED` : 'NOT ACCEPTED'} good={r.accepted}/>
       <Card title="Observed database" detail={r.reconciles ? 'Operator reconciles the object' : 'No reconciliation in this example'} value={`${r.observed} COPIES`} good={r.reconciles}/>
     </div>
+    <div className="operator-copies" role="img" aria-label={`${r.observed} observed database copies${r.accepted ? `; ${s.desired} requested` : '; request not accepted'}`}><span>OBSERVED DATABASE COPIES</span><div aria-hidden="true">{Array.from({ length: 3 }, (_, index) => <i key={index} className={index < r.observed ? 'operator-copy-running' : ''}>{index < r.observed ? 'RUNNING' : '—'}</i>)}</div></div>
     <Result good={r.reconciles} title={!r.accepted ? 'The API does not know this type' : !r.reconciles ? 'The resource can exist without an operator' : 'The operator moves observed state toward desired state'}>A CRD registers a type; an instance describes desired state. A running controller implements behavior, rather than the CRD itself.</Result>
     <LessonCoach task="Start the operator and watch the observed database copies move toward the requested three." hint="The CRD is already registered. Select Yes for Operator running." complete={r.reconciles && s.desired === 3} success="The example operator moves the observed count from one to three."/>
     <p className="lab-source">Simplified simulation: the custom resource is valid, the existing database starts at one copy, and a working authorized operator converges instantly. Real controllers can fail or take time; check their status, permissions and logs. <a href="https://kubernetes.io/docs/concepts/extend-kubernetes/operator/">Operator pattern</a>.</p>
@@ -194,6 +199,7 @@ export function AutoscalingLab() {
       <Card title="Calculated replicas" detail="2 × utilization / 50%, rounded up" value={r.raw === null ? 'UNAVAILABLE' : r.raw} good={r.raw !== null}/>
       <Card title="Desired replicas" detail={`Bounded by min ${s.min} and max ${s.max}`} value={r.desired === null ? 'NO CPU SIGNAL' : r.desired} good={r.desired !== null}/>
     </div>
+    <div className="cpu-signal"><span>CPU UTILIZATION · TARGET 50%</span>{r.raw === null ? <b>Cannot calculate without both metrics and requests</b> : <><meter min={0} max={150} low={50} high={100} optimum={50} value={s.usage} aria-label={`CPU utilization ${s.usage} percent; target 50 percent`}/><b>{s.usage}% observed · 50% target</b></>}</div>
     <div className="hpa-replica-preview" role="img" aria-label={r.desired === null ? 'Desired replicas cannot be calculated from this CPU signal' : `Desired replicas: ${r.desired} of 6 shown`}>
       <span>DESIRED COPIES · NOT RUNNING PODS</span><div aria-hidden="true">{Array.from({ length: 6 }, (_, index) => <i key={index} className={r.desired !== null && index < r.desired ? 'hpa-slot-active' : ''}/>)}</div>
     </div>

@@ -31,6 +31,13 @@
 .pod-init-sequence p b{margin-right:8px;color:#90e0bf;font-family:'IBM Plex Mono',monospace}
 .pods-scene .pod-waiting{opacity:.7}
 .pods-scene .pod-waiting i{color:#efc97c}
+.probes-scene :is(.app-container-monitor,.parallel-probe){width:100%;text-align:left;font-family:inherit}
+.probe-model-note{margin:0;color:#b9ccd7;font-size:12px;line-height:1.55}
+.traffic-conditions{display:flex;flex-wrap:wrap;align-items:center;gap:7px;margin:12px 0}
+.traffic-conditions span{color:#b7cbd6;font-size:10px;font-weight:700}
+.traffic-conditions button{min-height:36px;padding:7px 10px;border:1px solid #49667c;border-radius:7px;background:#142b3c;color:#dbebf3}
+.traffic-conditions button[aria-pressed=true]{border-color:#d6a25f;background:#392a1e;color:#ffe1b9}
+.traffic-hop:disabled{opacity:.42;cursor:not-allowed}
 .pods-scene .pod-init-active{box-shadow:0 0 16px #e7cd7866}
 .pods-scene .pod-container{transition:opacity .45s,border-color .45s,box-shadow .45s}
 .service-endpoint-note{margin:8px 0;color:#afc2d0;font-size:12px;line-height:1.5}
