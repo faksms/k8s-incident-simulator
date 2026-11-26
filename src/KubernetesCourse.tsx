@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { ComponentType } from 'react'
 import { motion } from 'framer-motion'
 import { ArrowRight, BookOpen, CheckCircle2, ChevronLeft, ChevronRight, CircleHelp, Search, ShieldCheck, Sparkles } from 'lucide-react'
@@ -10,9 +10,12 @@ import TrafficLesson from './lessons/TrafficLesson'
 import TopologyLesson from './lessons/TopologyLesson'
 import ResourceQuotaLesson from './lessons/ResourceQuotaLesson'
 import ResourceRequestsLesson from './lessons/ResourceRequestsLesson'
+import { DiscoveryLab, StorageLab } from './lessons/ConceptLabs'
 import LearningMaterials, { materials } from './LearningMaterials'
 import type { Material } from './LearningMaterials'
 import { ExtendedLessonScene, extendedLessons } from './ExtendedLessons'
+import { courseChapters, filterTopics, flattenTopics } from './courseCatalog'
+import type { TopicNode } from './courseCatalog'
 import './lessons/CourseShell.css'
 import './CourseTypography.css'
 import './lessons/WorkloadMotion.css'
@@ -29,6 +32,10 @@ const lessons:Lesson[] = [
   {id:'resource-requests',title:'Pod resource requests & limits',subtitle:'08 · SCHEDULING AND RUNTIME',body:'Tune a Pod’s CPU and memory requests and limits. Watch requests determine placement while runtime usage can trigger CPU throttling or a memory OOM kill.',takeaway:'Requests shape scheduling; limits constrain runtime consumption.',Component:ResourceRequestsLesson},
   {id:'resource-quota',title:'Namespace resource quotas',subtitle:'09 · RESOURCE GOVERNANCE',body:'ResourceQuota places hard aggregate limits on namespaced resources. See how the API admission check compares a new workload with the namespace budget before creating Pods.',takeaway:'A workload request is admitted only when all applicable hard quotas have room.',Component:ResourceQuotaLesson},
 ]
+const allLessons = [...lessons, ...extendedLessons]
+const orderedIds = courseChapters.flatMap(chapter => flattenTopics(chapter.topics))
+export const courseLessonIds = allLessons.map(lesson => lesson.id)
+export const initialLessonIndex = allLessons.findIndex(lesson => lesson.id === orderedIds[1])
 
 export function matchesTopic(query: string, title: string, body: string, material: Material, keywords = '') {
   const search = query.trim().toLowerCase()
@@ -70,23 +77,46 @@ export default function KubernetesCourse({index,onIndexChange,passedLessons,onPa
   const [selected,setSelected] = useState('')
   const [query, setQuery] = useState('')
   const [indexOpen, setIndexOpen] = useState(false)
-  const allLessons = [...lessons, ...extendedLessons]
+  const lessonHeading = useRef<HTMLHeadingElement>(null)
+  const focusLesson = useRef(false)
   const lesson = allLessons[index]
   const standardLesson = lessons[index]
   const extendedLesson = extendedLessons[index - lessons.length]
   const Scene = standardLesson?.Component
-  const matchingLessons = allLessons.map((item, i) => {
-    const material = i < lessons.length ? materials[item.id] : extendedLessons[i - lessons.length].material
-    return { item, i, visible: matchesTopic(query, item.title, item.body, material, 'keywords' in item ? item.keywords : '') }
-  }).filter(item => item.visible)
-  const architectureMatches = matchesTopic(query, 'Cluster architecture', '', materials.architecture, 'control plane nodes scheduler api server etcd networking')
-  function move(next:number) {
+  const currentPosition = orderedIds.indexOf(lesson.id)
+  const currentChapter = courseChapters.find(chapter => flattenTopics(chapter.topics).includes(lesson.id))!
+  const matchingChapters = courseChapters.map(chapter => ({
+    ...chapter,
+    topics: filterTopics(chapter.topics, id => {
+      if (id === 'architecture') return matchesTopic(query, 'Cluster architecture', '', materials.architecture, 'control plane nodes scheduler api server etcd networking')
+      const item = allLessons.find(candidate => candidate.id === id)!
+      const material = 'material' in item ? item.material : materials[item.id]
+      return matchesTopic(query, item.title, item.body, material, 'keywords' in item ? item.keywords : '')
+    }, Boolean(query.trim()) && `${chapter.title} ${chapter.description}`.toLowerCase().includes(query.trim().toLowerCase())),
+  })).filter(chapter => chapter.topics.length > 0)
+  const shownCount = matchingChapters.reduce((count, chapter) => count + flattenTopics(chapter.topics).length, 0)
+  useEffect(() => {
+    if (focusLesson.current) {
+      lessonHeading.current?.focus({ preventScroll: true })
+      focusLesson.current = false
+    }
+  }, [index, indexOpen])
+  function move(id: string) {
     setSelected('')
     setIndexOpen(false)
-    if(next < 0) { onArchitecture(); return }
-    if(next >= allLessons.length) { onComplete(); return }
+    if (id === 'architecture') { onArchitecture(); return }
+    const next = allLessons.findIndex(item => item.id === id)
+    if (next < 0) throw new Error(`Unknown course topic: ${id}`)
+    focusLesson.current = true
     onIndexChange(next)
     window.scrollTo(0, 0)
+  }
+  function renderTopics(nodes: TopicNode[]) {
+    return <ul>{nodes.map(node => {
+      const item = allLessons.find(candidate => candidate.id === node.id)
+      const title = node.id === 'architecture' ? 'Cluster architecture' : item!.title
+      return <li key={node.id}><button className={`course-step ${lesson.id === node.id ? 'active' : ''} ${passedLessons.has(node.id) ? 'done' : ''}`} onClick={() => move(node.id)} aria-current={lesson.id === node.id ? 'page' : undefined}><span>{passedLessons.has(node.id) ? <CheckCircle2 size={15}/> : String(orderedIds.indexOf(node.id) + 1).padStart(2, '0')}</span><b>{title}</b></button>{node.children && renderTopics(node.children)}</li>
+    })}</ul>
   }
 
   return <main className="course-page">
@@ -96,19 +126,19 @@ export default function KubernetesCourse({index,onIndexChange,passedLessons,onPa
         <summary><span><BookOpen size={18}/><b>Explore the topic index</b></span><small>{allLessons.length + 1} topics · Search and jump to a lesson</small></summary>
         <div className="index-content">
           <label className="index-search"><Search size={18}/><span className="sr-only">Search Kubernetes topics</span><input type="search" value={query} onChange={event=>setQuery(event.target.value)} placeholder="Search topics, concepts, or keywords"/></label>
-          <p className="index-count" aria-live="polite">{matchingLessons.length + (architectureMatches ? 1 : 0)} topics found</p>
-          <nav className="course-steps" aria-label="Kubernetes learning topics">{architectureMatches&&<button className={`course-step ${passedLessons.has('architecture')?'done':''}`} onClick={onArchitecture}><span>{passedLessons.has('architecture')?<CheckCircle2 size={15}/>: '01'}</span><b>Cluster architecture</b></button>}{matchingLessons.map(({item,i})=><button key={item.id} className={`course-step ${index===i?'active':''} ${passedLessons.has(item.id)?'done':''}`} onClick={()=>move(i)} aria-current={index===i?'step':undefined}><span>{passedLessons.has(item.id)?<CheckCircle2 size={15}/>:String(i+2).padStart(2,'0')}</span><b>{item.title}</b></button>)}</nav>
-          {!architectureMatches && matchingLessons.length === 0 && <p className="index-empty">No topics match. Try a broader term such as storage, networking, or security.</p>}
+          <p className="index-count" aria-live="polite">{shownCount} lessons shown{query.trim() ? ' · including parent topics' : ''}</p>
+          <nav className="chapter-index" aria-label="Kubernetes learning topics">{matchingChapters.map(chapter => <section key={chapter.id} className="index-chapter" aria-labelledby={`chapter-${chapter.id}`}><div className="index-chapter-heading"><h2 id={`chapter-${chapter.id}`}>{chapter.title}</h2><p>{chapter.description}</p></div>{renderTopics(chapter.topics)}</section>)}</nav>
+          {shownCount === 0 && <p className="index-empty">No topics match. Try a broader term such as storage, networking, or security.</p>}
         </div>
       </details>
       <section className="lesson-area">
-        <div className="lesson-copy"><p className="course-kicker"><Sparkles size={14}/>{standardLesson?.subtitle ?? `${String(index+2).padStart(2,'0')} · EXPLORE THE CONCEPT`}</p><h1>{lesson.title}</h1><p className="lesson-description">{lesson.body}</p><div className="learning-takeaway"><BookOpen size={18}/><span><b>OPERATING PRINCIPLE</b>{lesson.takeaway}</span></div><div className="lesson-instruction"><CircleHelp size={17}/>{standardLesson ? 'Interact with the simulation; inspect components and watch cluster behavior change.' : 'Explore each step of the walkthrough, then test your understanding below.'}</div>{selected&&<div className="component-explanation"><b>{selected}</b><p>{describeSelection(selected)}</p></div>}</div>
-        <div className="visual-card topic-visual"><div className="visual-top"><span><Sparkles size={15}/> SYSTEMS / EXPLAINED</span><span className="demo-badge">K8S · {String(index+2).padStart(2,'0')}</span></div><motion.div key={lesson.id} className={`lesson-visual topic-lesson-visual topic-lesson-${lesson.id}`} initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} transition={{duration:.2}}>{Scene ? <Scene onSelect={setSelected}/> : <ExtendedLessonScene lesson={extendedLesson}/>}</motion.div><div className="visual-footer"><span><span className="legend-dot"/> SIMULATED CLUSTER</span><span>NO REAL INFRASTRUCTURE</span></div></div>
+        <div className="lesson-copy"><p className="course-kicker"><Sparkles size={14}/>{currentChapter.title.toUpperCase()} · {String(currentPosition+1).padStart(2,'0')} / {String(orderedIds.length).padStart(2,'0')}</p><h1 ref={lessonHeading} tabIndex={-1}>{lesson.title}</h1><p className="lesson-description">{lesson.body}</p><div className="learning-takeaway"><BookOpen size={18}/><span><b>OPERATING PRINCIPLE</b>{lesson.takeaway}</span></div><div className="lesson-instruction"><CircleHelp size={17}/>{standardLesson || lesson.id === 'dns' || lesson.id === 'storage' ? 'Interact with the simulation; change a setting and observe the outcome.' : 'Explore each step of the walkthrough, then test your understanding below.'}</div>{selected&&<div className="component-explanation"><b>{selected}</b><p>{describeSelection(selected)}</p></div>}</div>
+        <div className="visual-card topic-visual"><div className="visual-top"><span><Sparkles size={15}/> SYSTEMS / EXPLAINED</span><span className="demo-badge">K8S · {String(currentPosition+1).padStart(2,'0')}</span></div><motion.div key={lesson.id} className={`lesson-visual topic-lesson-visual topic-lesson-${lesson.id}`} initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} transition={{duration:.2}}>{Scene ? <Scene onSelect={setSelected}/> : lesson.id === 'dns' ? <DiscoveryLab/> : lesson.id === 'storage' ? <StorageLab/> : <ExtendedLessonScene lesson={extendedLesson}/>}</motion.div><div className="visual-footer"><span><span className="legend-dot"/> SIMULATED CLUSTER</span><span>NO REAL INFRASTRUCTURE</span></div></div>
       </section>
       <LearningMaterials key={lesson.id} lessonId={lesson.id} extraMaterial={extendedLesson?.material} passed={passedLessons.has(lesson.id)} onPass={()=>onPass(lesson.id)}/>
-      <footer className="course-footer"><button className="course-back" onClick={()=>move(index-1)}><ChevronLeft size={17}/> Previous topic</button><span>TOPIC {String(index+2).padStart(2,'0')} / {String(allLessons.length+1).padStart(2,'0')}</span><button className="course-next" onClick={()=>move(index+1)}>{index===allLessons.length-1?'Start incident exercises':'Next topic'} <ChevronRight size={17}/></button></footer>
+      <footer className="course-footer"><button className="course-back" onClick={()=>move(orderedIds[currentPosition-1])}><ChevronLeft size={17}/> Previous topic</button><span>TOPIC {String(currentPosition+1).padStart(2,'0')} / {String(orderedIds.length).padStart(2,'0')}</span><button className="course-next" onClick={()=>currentPosition===orderedIds.length-1 ? onComplete() : move(orderedIds[currentPosition+1])}>{currentPosition===orderedIds.length-1?'Start incident exercises':'Next topic'} <ChevronRight size={17}/></button></footer>
       <p className="course-safety"><ShieldCheck size={14}/> Interactive training simulation · no connection to a real cluster.</p>
-      <p className="course-accessibility"><CircleHelp size={13}/> Explore the simulation, read the notes, then try the knowledge check. Your passed checks are kept while this page stays open.</p>
+      <p className="course-accessibility"><CircleHelp size={13}/> Explore the simulation, read the notes, then try the knowledge check. Passed checks are saved in this browser when storage is available.</p>
     </div>
   </main>
 }
