@@ -15,7 +15,9 @@ Open `http://localhost:5173`. Build and preview with `npm run build` and `npm ru
 
 Start with the architecture map, then explore the foundation topics using their simulations, notes, and knowledge checks. Select a topic to revisit it or continue to guided or independent incident practice. Passed checks are retained while the page remains open, but are reset on reload. From the incident welcome screen, you can return to the lessons.
 
-In incident practice, investigate simulated evidence, diagnose the cause, and choose a recovery action. All cluster commands are simulated; no real cluster or credentials are used.
+Open **Explore the topic index** on any course lesson to search concepts and jump between topics. The learning path includes original walkthroughs covering cluster setup, namespaces, service discovery, storage, configuration, StatefulSets, the API, RBAC, security, and terminology alongside the existing simulations. These lessons cover topics also found in Nigel Poulton's *The Kubernetes Book*, without reproducing the book. Consult the [Kubernetes documentation](https://kubernetes.io/docs/) for current, version-specific guidance.
+
+In incident practice, investigate simulated evidence, diagnose the cause, and choose a recovery action. Guided mode includes prompts; in independent mode, use **Reveal hint** when needed. All cluster commands are simulated; no real cluster or credentials are used.
 
 Includes 13 scenarios: OOMKilled, ImagePullBackOff, DNS failure, node memory and disk pressure, readiness/liveness probe failures, unreachable service, bad ingress, maxed HPA, expired TLS, stuck rollout, and Helm upgrade failure.
 

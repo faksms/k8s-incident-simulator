@@ -205,7 +205,7 @@ export default function ClusterArchitecture({ onComplete, passed, onPass }: { on
     <header className="architecture-header">
       <div className="architecture-brand"><span className="architecture-mark"><Cloud size={20}/></span><span><b>Kubernetes, visually</b><small>CLUSTER CONTROL &amp; DATA PATHS</small></span></div>
       <div className="architecture-header-note"><span className="live-dot"/> SIMULATED CLUSTER</div>
-      <button className="architecture-skip" onClick={onComplete}>Continue to foundations <ArrowRight size={16}/></button>
+      <button className="architecture-skip" onClick={onComplete}>Browse lessons &amp; topic index <ArrowRight size={16}/></button>
     </header>
 
     <div className="architecture-shell">

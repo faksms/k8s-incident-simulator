@@ -4,6 +4,7 @@ import App from './App'
 import KubernetesCourse from './KubernetesCourse'
 import ClusterArchitecture from './ClusterArchitecture'
 import './index.css'
+import './SitePolish.css'
 
 function LearningPath() {
   const [chapter, setChapter] = React.useState<'architecture' | 'course' | 'incidents'>('architecture')

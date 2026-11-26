@@ -3,7 +3,7 @@ import { BookOpen, Check, CircleCheck, Clipboard, Terminal } from 'lucide-react'
 import './LearningMaterials.css'
 import './LearningMaterialsPolish.css'
 
-type Material = {
+export type Material = {
   title: string
   objective: string
   concepts: { term: string; detail: string }[]
@@ -15,7 +15,7 @@ type Material = {
   explanation: string
 }
 
-const materials: Record<string, Material> = {
+export const materials: Record<string, Material> = {
   architecture: {
     title: 'Control plane, node agents, and the data path',
     objective: 'Trace how Kubernetes accepts intent, reconciles it into a running workload, and routes traffic independently.',
@@ -166,8 +166,8 @@ const materials: Record<string, Material> = {
   },
 }
 
-export default function LearningMaterials({ lessonId, passed, onPass }: { lessonId: string; passed: boolean; onPass: () => void }) {
-  const material = materials[lessonId]
+export default function LearningMaterials({ lessonId, passed, onPass, extraMaterial }: { lessonId: string; passed: boolean; onPass: () => void; extraMaterial?: Material }) {
+  const material = extraMaterial ?? materials[lessonId]
   const [selected, setSelected] = useState<number | null>(null)
   const [copied, setCopied] = useState(false)
   const [copyError, setCopyError] = useState(false)
