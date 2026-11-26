@@ -68,7 +68,8 @@ function SecurityLab() {
 
 const terms = {
   Pod: 'A Pod groups one or more containers and runs on a node.',
-  Deployment: 'A Deployment manages app copies and updates through ReplicaSets.',
+  Deployment: 'A Deployment manages ReplicaSets to handle app copies and updates.',
+  ReplicaSet: 'A ReplicaSet creates or removes Pods to reach its requested number of copies.',
   Service: 'A Service gives clients a stable way to reach selected endpoints.',
   PVC: 'A PersistentVolumeClaim (PVC) asks for storage a Pod can use.',
   Controller: 'A controller watches the cluster and works toward the requested state.',

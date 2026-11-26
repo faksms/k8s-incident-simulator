@@ -218,12 +218,12 @@ export const extendedLessons: ExtendedLesson[] = [
   },
   {
     id: 'terminology', title: 'Kubernetes terminology',
-    body: 'Learn the key terms you will see throughout this course and how they fit together.',
-    takeaway: 'Think in terms of desired state, controllers, workloads, and networking.', keywords: 'glossary terminology vocabulary definitions objects',
+    body: 'Learn the words used in Kubernetes and see how a Deployment, ReplicaSet, Pods, and a Service work together.',
+    takeaway: 'A Deployment manages ReplicaSets; a ReplicaSet manages Pods. A Service helps clients reach the app.', keywords: 'glossary terminology vocabulary definitions objects replicaset service types clusterip nodeport loadbalancer',
     diagram: { nodes: ['Manifest', 'Workload', 'Service + PVC'], links: ['declare', 'connect'] },
     steps: [
       { title: 'Declare intent', detail: 'A manifest describes Kubernetes API objects. The spec says what you want; status says what is happening.' },
-      { title: 'Run workloads', detail: 'A Pod groups containers. Controllers such as Deployments and StatefulSets manage Pods to meet workload goals.' },
+      { title: 'Run workloads', detail: 'A Deployment manages ReplicaSets. Each ReplicaSet works toward its requested number of Pods, and each Pod runs one or more containers.' },
       { title: 'Connect and persist', detail: 'Services help workloads find and reach each other. Persistent volume claims ask for storage.' },
     ],
     material: {
@@ -232,7 +232,8 @@ export const extendedLessons: ExtendedLesson[] = [
         { term: 'Cluster and node', detail: 'A cluster has a control plane and worker nodes. Pods run on the resources that nodes provide.' },
         { term: 'Object and manifest', detail: 'An object is a record in the Kubernetes API. A manifest describes the object you want, often in YAML.' },
         { term: 'Controller and reconciliation', detail: 'A controller checks the current state and takes action to move it toward the state you want.' },
-        { term: 'Pod, Deployment, Service', detail: 'A Pod runs containers. A Deployment manages copies of a stateless workload. A Service gives a steady way to reach selected endpoints.' },
+        { term: 'Deployment → ReplicaSet → Pod', detail: 'A Deployment manages ReplicaSets for app copies and updates. A ReplicaSet creates or removes Pods to reach its requested count. Each Pod runs one or more containers.' },
+        { term: 'Service', detail: 'A Service gives clients a steady way to reach an app. Its selector can match Pod labels, and it normally sends traffic to ready endpoints.' },
         { term: 'Namespace and context', detail: 'A namespace groups namespaced resources. A kubeconfig context selects a cluster and user, and can set a default namespace.' },
       ],
       exampleLabel: 'DISCOVER RESOURCE TYPES', example: 'kubectl api-resources\nkubectl explain pod\nkubectl explain service.spec',
