@@ -1,1 +1,276 @@
-.deploy-scene{height:100%;display:grid;grid-template-rows:auto auto auto 1fr auto auto}.deploy-toolbar{display:flex;justify-content:space-between;padding:8px;border-bottom:1px solid #29394c;color:#96a9bb;font:700 8px 'IBM Plex Mono',monospace}.deploy-toolbar>span{display:flex;align-items:center;gap:6px}.deploy-toolbar>span:last-child i{width:6px;height:6px;border-radius:50%;background:#69d8b0}.reconciling i{animation:deployPulse .7s infinite}@keyframes deployPulse{50%{box-shadow:0 0 9px #69d8b0}}.deploy-desired{display:grid;grid-template-columns:120px 1fr 120px;align-items:center;gap:12px;margin:12px 40px}.deploy-desired div{display:grid;text-align:center}.deploy-desired small{color:#8196aa;font:7px 'IBM Plex Mono',monospace}.deploy-desired strong{color:#75ddb4;font-size:20px}.deploy-desired input{accent-color:#62cda9}.reconcile-loop{display:flex;align-items:center;justify-content:center;gap:10px;color:#7990a5;font:700 7px 'IBM Plex Mono',monospace}.reconcile-loop svg{color:#59caa3}.deploy-pods{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:8px;padding:14px}.deploy-pod{min-width:88px;display:grid;grid-template-columns:auto 1fr;align-items:center;gap:5px;padding:8px;border:1px solid #3a6657;border-radius:8px;background:#11271f;color:#dcebe5;text-align:left}.deploy-pod svg{color:#70dcb4}.deploy-pod b{font-size:8px}.deploy-pod small{grid-column:2;color:#70cda9;font-size:7px}.deploy-pod.pod-pending{border-color:#786747;background:#27231b;opacity:.75}.deploy-actions{display:flex;justify-content:center;gap:7px}.deploy-actions button{padding:8px 10px;border:1px solid #4b7365;border-radius:7px;background:#143329;color:#9ae1c5;font-size:8px}.deploy-actions .deploy-reset{display:flex;align-items:center;gap:5px;background:#121f2e}.deploy-note{margin:8px 25px 0;text-align:center;color:#8398ab;font-size:8px}@media(max-width:620px){.deploy-desired{grid-template-columns:85px 1fr 85px;margin:12px 8px}.reconcile-loop{gap:4px}.deploy-pods{padding:8px}.deploy-pod{min-width:78px}}
+.deploy-scene {
+  height: 100%;
+  min-height: 640px;
+  display: grid;
+  grid-template-rows: auto auto auto auto auto minmax(120px, 1fr) auto auto auto;
+  color: #dce7f1;
+}
+
+.deploy-toolbar {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px;
+  border-bottom: 1px solid #29394c;
+  color: #96a9bb;
+  font: 700 10px 'IBM Plex Mono', monospace;
+}
+
+.deploy-toolbar > span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.deploy-toolbar > span:last-child i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #69d8b0;
+}
+
+.reconciling i {
+  animation: deployPulse .7s infinite;
+}
+
+@keyframes deployPulse {
+  50% { box-shadow: 0 0 9px #69d8b0; }
+}
+
+.deploy-desired {
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr) 120px;
+  align-items: center;
+  gap: 12px;
+  margin: 12px 40px;
+}
+
+.deploy-desired div {
+  display: grid;
+  text-align: center;
+}
+
+.deploy-desired small {
+  color: #8196aa;
+  font: 700 9px 'IBM Plex Mono', monospace;
+}
+
+.deploy-desired strong {
+  color: #75ddb4;
+  font-size: 20px;
+}
+
+.deploy-desired input {
+  width: 100%;
+  accent-color: #62cda9;
+}
+
+.deploy-slider-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  clip-path: inset(50%);
+}
+
+.deploy-chain {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  margin: 0 24px 12px;
+  color: #67cfaa;
+}
+
+.deploy-chain-node {
+  display: grid;
+  gap: 3px;
+  padding: 10px;
+  border: 1px solid #38594e;
+  border-radius: 8px;
+  background: #101f1b;
+  text-align: center;
+}
+
+.deploy-chain-node b {
+  color: #cceadd;
+  font-size: 11px;
+}
+
+.deploy-chain-node small {
+  color: #8ea99c;
+  font-size: 9px;
+}
+
+.reconcile-loop {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: #7990a5;
+  font: 700 9px 'IBM Plex Mono', monospace;
+}
+
+.reconcile-loop svg {
+  color: #59caa3;
+}
+
+.deploy-pods {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 14px;
+}
+
+.deploy-pod {
+  min-width: 100px;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 5px;
+  padding: 9px;
+  border: 1px solid #3a6657;
+  border-radius: 8px;
+  background: #11271f;
+  color: #dcebe5;
+  text-align: left;
+}
+
+.deploy-pod svg {
+  color: #70dcb4;
+}
+
+.deploy-pod b {
+  font-size: 11px;
+}
+
+.deploy-pod small {
+  grid-column: 2;
+  color: #70cda9;
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.deploy-pod.pod-creating {
+  border-color: #b28c4c;
+  background: #27231b;
+}
+
+.deploy-pod.pod-creating svg,
+.deploy-pod.pod-creating small {
+  color: #edc46f;
+}
+
+.deploy-pod.pod-terminating {
+  border-color: #835c62;
+  background: #281d22;
+}
+
+.deploy-pod.pod-terminating svg,
+.deploy-pod.pod-terminating small {
+  color: #e69aa3;
+}
+
+.deploy-actions {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.deploy-actions button {
+  min-height: 36px;
+  padding: 8px 11px;
+  border: 1px solid #4b7365;
+  border-radius: 7px;
+  background: #143329;
+  color: #9ae1c5;
+  font-size: 11px;
+}
+
+.deploy-actions button:disabled {
+  cursor: not-allowed;
+  opacity: .6;
+}
+
+.deploy-actions .deploy-reset {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: #121f2e;
+}
+
+.deploy-note {
+  margin: 8px 25px 0;
+  text-align: center;
+  color: #8398ab;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+@media (max-width: 620px) {
+  .deploy-scene {
+    min-height: 0;
+    grid-template-rows: auto auto auto auto auto minmax(110px, 1fr) auto auto auto;
+  }
+
+  .deploy-toolbar {
+    align-items: flex-start;
+    font-size: 8px;
+  }
+
+  .deploy-desired {
+    grid-template-columns: 85px minmax(0, 1fr) 85px;
+    margin: 12px 8px;
+  }
+
+  .deploy-desired small {
+    font-size: 7px;
+  }
+
+  .deploy-chain {
+    gap: 5px;
+    margin-right: 4px;
+    margin-left: 4px;
+  }
+
+  .deploy-chain-node {
+    padding: 8px 4px;
+  }
+
+  .deploy-chain-node b {
+    font-size: 9px;
+  }
+
+  .deploy-chain-node small {
+    font-size: 8px;
+  }
+
+  .reconcile-loop {
+    gap: 4px;
+    flex-wrap: wrap;
+  }
+
+  .deploy-pods {
+    padding: 8px;
+  }
+
+  .deploy-pod {
+    min-width: 88px;
+  }
+
+  .deploy-note {
+    margin-right: 8px;
+    margin-left: 8px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reconciling i {
+    animation: none;
+  }
+}
