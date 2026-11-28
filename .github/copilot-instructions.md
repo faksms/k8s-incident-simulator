@@ -24,6 +24,7 @@
 ## Interactive simulations
 
 - Make controls functional and observable: learner actions should update the modeled resources, relationships, outcomes, or event explanation. Include a clear way to replay or reset multi-step interactions when appropriate.
+- Prefer interactive sliders over rows of buttons for adjustable numeric ranges, such as CPU usage or replica counts. Show the current value, units, and range; use sensible steps, keyboard-accessible labels, and valid bounds when inputs depend on each other. Keep buttons for discrete choices such as enabling or disabling metrics.
 - Represent healthy and failure states accurately for the concept. Use realistic Kubernetes terminology and commands where useful, but label simplified assumptions and do not present illustrative behavior as a real cluster operation.
 - Make the current step and outcome understandable without relying on motion or color alone. Use the existing `LessonCoach` for a guided goal when appropriate; derive its `complete` state from the learner's actual interaction instead of inventing a callback or reporting success immediately.
 - Use semantic buttons and controls, expose selected/pressed state where applicable, provide accessible status text, and keep keyboard interaction usable.

@@ -174,7 +174,12 @@ export function OperatorsLab() {
   </div>
 }
 
-type AutoscalingSettings = { metrics: YesNo; requests: YesNo; usage: 25 | 50 | 150; min: 1 | 2; max: 3 | 6 }
+export type AutoscalingSettings = { metrics: YesNo; requests: YesNo; usage: number; min: number; max: number }
+
+export function AutoscalingRange({ label, value, min, max, step = 1, unit = '', onChange }: { label: string; value: number; min: number; max: number; step?: number; unit?: string; onChange: (value: number) => void }) {
+  return <label className="autoscale-range"><span>{label} <b>{value}{unit}</b></span><input type="range" min={min} max={max} step={step} value={value} aria-label={label} aria-valuetext={`${value}${unit}`} onChange={event => onChange(Number(event.target.value))}/><small><span>{min}{unit}</span><span>{max}{unit}</span></small></label>
+}
+
 export function autoscalingExample(s: AutoscalingSettings) {
   if (s.metrics !== 'yes' || s.requests !== 'yes') return { desired: null, raw: null }
   const raw = Math.ceil(2 * s.usage / 50)
@@ -190,16 +195,16 @@ export function AutoscalingLab() {
     <div className="lab-controls">
       <Choice label="RESOURCE METRICS AVAILABLE" value={s.metrics} options={yesNo} onChange={metrics => set({ ...s, metrics })}/>
       <Choice label="CPU REQUESTS PRESENT" value={s.requests} options={yesNo} onChange={requests => set({ ...s, requests })}/>
-      <Choice label="AVERAGE CPU PER POD" value={s.usage} options={[{ value: 25, label: '25m' }, { value: 50, label: '50m' }, { value: 150, label: '150m' }]} onChange={usage => set({ ...s, usage })}/>
-      <Choice label="MIN REPLICAS" value={s.min} options={[{ value: 1, label: '1' }, { value: 2, label: '2' }]} onChange={min => set({ ...s, min })}/>
-      <Choice label="MAX REPLICAS" value={s.max} options={[{ value: 3, label: '3' }, { value: 6, label: '6' }]} onChange={max => set({ ...s, max })}/>
+      <AutoscalingRange label="Average CPU per Pod" value={s.usage} min={0} max={200} step={5} unit="m" onChange={usage => set(current => ({ ...current, usage }))}/>
+      <AutoscalingRange label="Minimum replicas" value={s.min} min={1} max={s.max} onChange={min => set(current => ({ ...current, min }))}/>
+      <AutoscalingRange label="Maximum replicas" value={s.max} min={Math.max(2, s.min)} max={6} onChange={max => set(current => ({ ...current, max }))}/>
     </div>
     <div className="lab-flow" aria-label="CPU scaling calculation">
       <Card title="Measured utilization" detail="Usage divided by 100m request" value={s.metrics === 'yes' && s.requests === 'yes' ? `${s.usage}%` : 'UNKNOWN'} good={r.desired !== null}/>
       <Card title="Calculated replicas" detail="2 × utilization / 50%, rounded up" value={r.raw === null ? 'UNAVAILABLE' : r.raw} good={r.raw !== null}/>
       <Card title="Desired replicas" detail={`Bounded by min ${s.min} and max ${s.max}`} value={r.desired === null ? 'NO CPU SIGNAL' : r.desired} good={r.desired !== null}/>
     </div>
-    <div className="cpu-signal"><span>CPU UTILIZATION · TARGET 50%</span>{r.raw === null ? <b>Cannot calculate without both metrics and requests</b> : <><meter min={0} max={150} low={50} high={100} optimum={50} value={s.usage} aria-label={`CPU utilization ${s.usage} percent; target 50 percent`}/><b>{s.usage}% observed · 50% target</b></>}</div>
+    <div className="cpu-signal"><span>CPU UTILIZATION · TARGET 50%</span>{r.raw === null ? <b>Cannot calculate without both metrics and requests</b> : <><meter min={0} max={200} low={50} high={100} optimum={50} value={s.usage} aria-label={`CPU utilization ${s.usage} percent; target 50 percent`}/><b>{s.usage}% observed · 50% target</b></>}</div>
     <div className="hpa-replica-preview" role="img" aria-label={r.desired === null ? 'Desired replicas cannot be calculated from this CPU signal' : `Desired replicas: ${r.desired} of 6 shown`}>
       <span>DESIRED COPIES · NOT RUNNING PODS</span><div aria-hidden="true">{Array.from({ length: 6 }, (_, index) => <i key={index} className={r.desired !== null && index < r.desired ? 'hpa-slot-active' : ''}/>)}</div>
     </div>
