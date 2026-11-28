@@ -39,35 +39,6 @@ export function updateConfigExample(state: ConfigState, action: 'edit' | 'sync' 
   return { ...state, environment: state.source, volume: state.source }
 }
 
-type RolloutState = { ready: number; pending: boolean; failed: boolean }
-export function updateRolloutExample(state: RolloutState, action: 'start' | 'ready' | 'fail' | 'rollback'): RolloutState {
-  if (action === 'rollback') return { ready: 0, pending: false, failed: false }
-  if (action === 'start' && !state.pending && state.ready < 3) return { ...state, pending: true }
-  if (action === 'fail' && state.pending) return { ...state, failed: true }
-  if (action === 'ready' && state.pending) return { ready: state.ready + 1, pending: false, failed: false }
-  return state
-}
-
-export function RolloutLab() {
-  const [state, setState] = useState<RolloutState>({ ready: 0, pending: false, failed: false })
-  const act = (action: 'start' | 'ready' | 'fail' | 'rollback') => setState(current => updateRolloutExample(current, action))
-  return <div className="concept-lab">
-    <div className="lab-heading"><div><small>INTERACTIVE LAB · ROLLOUTS</small><h2>Update without losing ready copies</h2></div><Boxes size={23}/></div>
-    <p className="lab-intro">This example has three app copies. Start a new Pod, choose whether it becomes Ready, and see when an old Pod can be removed.</p>
-    <div className="lab-flow" aria-label="Rolling update example">
-      <div className="lab-node"><b>Old version</b><small>Ready Pods</small><LabValue value={3 - state.ready}/></div>
-      <div className={`lab-node ${state.failed ? 'lab-node-warning' : 'lab-node-good'}`}><b>New version</b><small>{state.pending ? state.failed ? 'One Pod is not Ready' : 'One Pod is starting' : 'No Pod starting'}</small><LabValue value={`${state.ready} Ready`}/></div>
-    </div>
-    <div className="rollout-preview" role="img" aria-label={`${3 - state.ready} old Ready Pods, ${state.ready} new Ready Pods${state.pending ? state.failed ? ', one new Pod not Ready' : ', one new Pod starting' : ''}`}>
-      <span>READY APP COPIES · {3 - state.ready} OLD / {state.ready} NEW</span><div aria-hidden="true">{Array.from({ length: 3 }, (_, index) => <i key={index} className={index < state.ready ? 'rollout-new' : 'rollout-old'}>{index < state.ready ? 'NEW' : 'OLD'}</i>)}{state.pending && <i className="rollout-pending">{state.failed ? 'NOT READY' : 'STARTING'}</i>}</div><div className="rollout-progress" aria-hidden="true"><i style={{width:`${state.ready / 3 * 100}%`}}/></div>
-    </div>
-    <div className="lab-actions"><button disabled={state.pending || state.ready === 3} onClick={() => act('start')}>Start new Pod</button><button disabled={!state.pending} onClick={() => act('ready')}>Pod becomes Ready</button><button disabled={!state.pending || state.failed} onClick={() => act('fail')}>Pod fails readiness</button><button onClick={() => act('rollback')}>Roll back</button></div>
-    <div className={`lab-result ${state.failed ? 'lab-result-warning' : 'lab-result-good'}`} role="status"><b>{state.failed ? 'Update is waiting for a Ready Pod' : state.ready === 3 ? 'All three copies use the new version' : state.pending ? 'The old Pod stays until the new Pod is Ready' : 'Ready to start the next copy'}</b><p>{state.failed ? 'A failed readiness check keeps this new Pod out of normal traffic. Investigate or roll back before continuing.' : 'Once the new Pod is Ready, this example removes one old Pod. Rollback returns the example to the old version.'}</p></div>
-    <LessonCoach task="Start a new Pod, make its readiness check fail, and watch what happens to the old copies." hint="Start the new Pod first, then choose Pod fails readiness. The old copy stays while the new one is not Ready." complete={state.pending && state.failed} success="The update waits: an unready replacement cannot take the old Pod's place in this example."/>
-    <p className="lab-source">Simplified example: three replicas, maxSurge 1, maxUnavailable 0, and a working controller. Real rollout timing, readiness, and capacity affect the result. A rollback does not undo external data changes. <a href="https://kubernetes.io/docs/concepts/workloads/controllers/deployment/" target="_blank" rel="noreferrer">Read about Deployments</a>.</p>
-  </div>
-}
-
 export function NamespaceLab() {
   const [scope, setScope] = useState<'shop' | 'tools' | 'all'>('shop')
   const namespaces = scope === 'all' ? ['shop', 'tools'] : [scope]

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { accessExample, resolveExample, schedulingExample, updateConfigExample, updateRolloutExample, updateStorage } from './ConceptLabs'
+import { accessExample, resolveExample, schedulingExample, updateConfigExample, updateStorage } from './ConceptLabs'
 
 describe('access and scheduling examples', () => {
   it('requires a matching binding, namespace and permission', () => {
@@ -19,13 +19,6 @@ describe('access and scheduling examples', () => {
     expect(changed).toEqual({ source: 2, environment: 1, volume: 1 })
     expect(updateConfigExample(changed, 'sync')).toEqual({ source: 2, environment: 1, volume: 2 })
     expect(updateConfigExample(changed, 'restart')).toEqual({ source: 2, environment: 2, volume: 2 })
-  })
-  it('keeps the old copy until the new one is ready and can roll back', () => {
-    const started = updateRolloutExample({ ready: 0, pending: false, failed: false }, 'start')
-    const failed = updateRolloutExample(started, 'fail')
-    expect(failed).toEqual({ ready: 0, pending: true, failed: true })
-    expect(updateRolloutExample(failed, 'ready')).toEqual({ ready: 1, pending: false, failed: false })
-    expect(updateRolloutExample(failed, 'rollback')).toEqual({ ready: 0, pending: false, failed: false })
   })
 })
 
