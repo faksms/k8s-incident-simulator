@@ -1,8 +1,10 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { ComponentType, ReactNode } from 'react'
+import { useReducedMotion } from 'framer-motion'
 import { Boxes, ChartNoAxesCombined, Database, Network, Package, Server } from 'lucide-react'
 import LessonCoach from './LessonCoach'
 import LabValue from './LabValue'
+import CpuScalingDiagram from './CpuScalingDiagram'
 import './ConceptLabs.css'
 
 type ChoiceProps<T extends string | number> = {
@@ -186,31 +188,43 @@ export function autoscalingExample(s: AutoscalingSettings) {
   return { raw, desired: Math.max(s.min, Math.min(s.max, raw)) }
 }
 
+const autoscalingPhases = ['Measure the Pods', 'Compare and calculate', 'Apply replica bounds', 'Reconcile worker Pods']
+
 export function AutoscalingLab() {
   const [s, set] = useState<AutoscalingSettings>({ metrics: 'yes', requests: 'yes', usage: 150, min: 1, max: 3 })
+  const [phase, setPhase] = useState(0)
+  const [playing, setPlaying] = useState(true)
+  const reducedMotion = Boolean(useReducedMotion())
   const r = autoscalingExample(s)
+  useEffect(() => {
+    if (!playing || reducedMotion) return
+    const timer = window.setInterval(() => setPhase(value => (value + 1) % autoscalingPhases.length), 2600)
+    return () => window.clearInterval(timer)
+  }, [playing, reducedMotion, s])
+  function change(next: Partial<AutoscalingSettings>) {
+    set(current => ({ ...current, ...next }))
+    setPhase(0)
+  }
+  function reset() {
+    set({ metrics: 'yes', requests: 'yes', usage: 150, min: 1, max: 3 })
+    setPhase(0)
+    setPlaying(true)
+  }
   return <div className="concept-lab">
     <div className="lab-heading"><div><small>HPA CALCULATOR</small><h2>From CPU demand to replicas</h2></div><ChartNoAxesCombined size={24}/></div>
-    <p className="lab-intro">Two running Pods each request 100m CPU when requests are present. The target is 50% utilization. Change their average usage, replica bounds, and measurement prerequisites.</p>
+    <p className="lab-intro">Two running Pods each request 100m CPU when requests are present. The target is 50% utilization. Change their average usage, replica bounds, and measurement prerequisites, then watch the workload reconcile on worker nodes.</p>
     <div className="lab-controls">
-      <Choice label="RESOURCE METRICS AVAILABLE" value={s.metrics} options={yesNo} onChange={metrics => set({ ...s, metrics })}/>
-      <Choice label="CPU REQUESTS PRESENT" value={s.requests} options={yesNo} onChange={requests => set({ ...s, requests })}/>
-      <AutoscalingRange label="Average CPU per Pod" value={s.usage} min={0} max={200} step={5} unit="m" onChange={usage => set(current => ({ ...current, usage }))}/>
-      <AutoscalingRange label="Minimum replicas" value={s.min} min={1} max={s.max} onChange={min => set(current => ({ ...current, min }))}/>
-      <AutoscalingRange label="Maximum replicas" value={s.max} min={Math.max(2, s.min)} max={6} onChange={max => set(current => ({ ...current, max }))}/>
+      <Choice label="RESOURCE METRICS AVAILABLE" value={s.metrics} options={yesNo} onChange={metrics => change({ metrics })}/>
+      <Choice label="CPU REQUESTS PRESENT" value={s.requests} options={yesNo} onChange={requests => change({ requests })}/>
+      <AutoscalingRange label="Average CPU per Pod" value={s.usage} min={0} max={200} step={5} unit="m" onChange={usage => change({ usage })}/>
+      <AutoscalingRange label="Minimum replicas" value={s.min} min={1} max={s.max} onChange={min => change({ min })}/>
+      <AutoscalingRange label="Maximum replicas" value={s.max} min={Math.max(2, s.min)} max={6} onChange={max => change({ max })}/>
     </div>
-    <div className="lab-flow" aria-label="CPU scaling calculation">
-      <Card title="Measured utilization" detail="Usage divided by 100m request" value={s.metrics === 'yes' && s.requests === 'yes' ? `${s.usage}%` : 'UNKNOWN'} good={r.desired !== null}/>
-      <Card title="Calculated replicas" detail="2 × utilization / 50%, rounded up" value={r.raw === null ? 'UNAVAILABLE' : r.raw} good={r.raw !== null}/>
-      <Card title="Desired replicas" detail={`Bounded by min ${s.min} and max ${s.max}`} value={r.desired === null ? 'NO CPU SIGNAL' : r.desired} good={r.desired !== null}/>
-    </div>
-    <div className="cpu-signal"><span>CPU UTILIZATION · TARGET 50%</span>{r.raw === null ? <b>Cannot calculate without both metrics and requests</b> : <><meter min={0} max={200} low={50} high={100} optimum={50} value={s.usage} aria-label={`CPU utilization ${s.usage} percent; target 50 percent`}/><b>{s.usage}% observed · 50% target</b></>}</div>
-    <div className="hpa-replica-preview" role="img" aria-label={r.desired === null ? 'Desired replicas cannot be calculated from this CPU signal' : `Desired replicas: ${r.desired} of 6 shown`}>
-      <span>DESIRED COPIES · NOT RUNNING PODS</span><div aria-hidden="true">{Array.from({ length: 6 }, (_, index) => <i key={index} className={r.desired !== null && index < r.desired ? 'hpa-slot-active' : ''}/>)}</div>
-    </div>
+    <div className="cpu-replay-controls"><span>{reducedMotion ? 'Reduced motion · step manually' : playing ? 'REPEATING EXAMPLE' : 'PAUSED'} · {autoscalingPhases[phase]}</span><div><button type="button" disabled={reducedMotion} onClick={() => setPlaying(value => !value)}>{playing && !reducedMotion ? 'Pause' : 'Play'}</button><button type="button" onClick={() => { setPlaying(false); setPhase(value => (value + 1) % autoscalingPhases.length) }}>Next step</button><button type="button" onClick={reset}>Reset</button></div></div>
+    <CpuScalingDiagram settings={s} result={r} phase={phase} reducedMotion={reducedMotion}/>
     <Result good={r.desired !== null} title={r.desired === null ? 'Cannot calculate this CPU utilization signal' : `Example desired count: ${r.desired}`}>{r.desired === null ? 'The HPA needs a resource metrics provider and CPU requests for the relevant containers to calculate utilization.' : r.raw !== r.desired ? 'The minimum or maximum replica setting bounds the calculated count.' : 'The calculated count is within the configured limits.'} The HPA adjusts desired replicas, not node capacity; new Pods still need resources and time to become Ready.</Result>
-    <LessonCoach task="Raise max replicas to 6 and watch the desired-copy preview." hint="At 150m usage, this example calculates six copies, but its initial maximum is three." complete={r.desired === 6} success="The new maximum allows the calculated desired count of six. It does not guarantee six Ready Pods."/>
-    <p className="lab-source">Simplified simulation: only one CPU metric, identical Pods with complete metrics and requests, no tolerance, stabilization or scaling policies. Real HPA behavior also accounts for missing metrics, readiness and other metrics. This is not a live cluster. <a href="https://kubernetes.io/docs/concepts/workloads/autoscaling/horizontal-pod-autoscale/">HPA documentation</a>.</p>
+    <LessonCoach task="Raise max replicas to 6 and watch the desired-copy preview." hint="At 150m usage, this example calculates six copies, but its initial maximum is three." complete={r.desired === 6} success="The replica limit permits six desired copies in this example. It does not guarantee six Ready Pods."/>
+    <p className="lab-source">Simplified simulation: each replay starts with two Pods and uses one fixed CPU sample. A drop from the target is illustrative, not measured history. Worker placement assumes enough capacity and is illustrative, not a scheduler rule or readiness guarantee. Only one CPU metric is used, with identical Pods and no tolerance, stabilization or scaling policies. Real HPA behavior also accounts for missing metrics, readiness and other metrics. This is not a live cluster. <a href="https://kubernetes.io/docs/concepts/workloads/autoscaling/horizontal-pod-autoscale/">HPA documentation</a>.</p>
   </div>
 }
 
