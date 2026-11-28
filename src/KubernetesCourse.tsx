@@ -9,6 +9,7 @@ import DeploymentVisualGuide from './lessons/DeploymentVisualGuide'
 import ServiceLesson from './lessons/ServiceLesson'
 import ServiceVisualGuide from './lessons/ServiceVisualGuide'
 import PriorityAnimation, { PriorityIntro } from './lessons/PriorityLesson'
+import SchedulingGuide from './lessons/SchedulingGuide'
 import TrafficLesson from './lessons/TrafficLesson'
 import TopologyLesson from './lessons/TopologyLesson'
 import ResourceQuotaLesson from './lessons/ResourceQuotaLesson'
@@ -176,6 +177,7 @@ export default function KubernetesCourse({index,track,onIndexChange,passedLesson
       </section>
       {lesson.id === 'deployments' && <DeploymentVisualGuide/>}
       {lesson.id === 'services' && <ServiceVisualGuide/>}
+      {lesson.id === 'scheduling' && <SchedulingGuide/>}
       {lesson.id === 'terminology' && <TerminologyGuide onTopic={move}/>}
       <LearningMaterials key={lesson.id} lessonId={lesson.id} extraMaterial={extendedLesson?.material} passed={passedLessons.has(lesson.id)} onPass={()=>onPass(lesson.id)}/>
       {lesson.id === 'priority-classes' && <PriorityAnimation/>}
