@@ -56,6 +56,7 @@ export const learningPaths: LearningPath[] = [
       { id: 'helm-kustomize', title: 'Helm and Kustomize' },
       { id: 'operators', title: 'Custom resources and operators' },
       { id: 'scheduling', title: 'Scheduling and affinity' },
+      { id: 'priority-classes', title: 'Priority classes and preemption' },
       { id: 'autoscaling', title: 'Autoscaling' },
       { id: 'network-policy', title: 'NetworkPolicy' },
       { id: 'service-types', title: 'Service types and endpoints' },

@@ -8,6 +8,7 @@ import DeploymentLesson from './lessons/DeploymentLesson'
 import DeploymentVisualGuide from './lessons/DeploymentVisualGuide'
 import ServiceLesson from './lessons/ServiceLesson'
 import ServiceVisualGuide from './lessons/ServiceVisualGuide'
+import PriorityAnimation, { PriorityIntro } from './lessons/PriorityLesson'
 import TrafficLesson from './lessons/TrafficLesson'
 import TopologyLesson from './lessons/TopologyLesson'
 import ResourceQuotaLesson from './lessons/ResourceQuotaLesson'
@@ -44,7 +45,7 @@ const lessons:Lesson[] = [
 const allExtendedLessons = [...extendedLessons, ...ckaLessons]
 export const specializedLessonScenes: Record<string, ComponentType> = {
   ...foundationLabs, ...administrationLabs, ...networkStorageLessonLabs,
-  dns: DiscoveryLab, storage: StorageLab, rbac: AccessLab, scheduling: SchedulingLab,
+  dns: DiscoveryLab, storage: StorageLab, rbac: AccessLab, scheduling: SchedulingLab, 'priority-classes': PriorityIntro,
   namespaces: NamespaceLab, configuration: ConfigurationLab, rollouts: RolloutLab,
 }
 const allLessons = [...lessons, ...allExtendedLessons]
@@ -177,6 +178,7 @@ export default function KubernetesCourse({index,track,onIndexChange,passedLesson
       {lesson.id === 'services' && <ServiceVisualGuide/>}
       {lesson.id === 'terminology' && <TerminologyGuide onTopic={move}/>}
       <LearningMaterials key={lesson.id} lessonId={lesson.id} extraMaterial={extendedLesson?.material} passed={passedLessons.has(lesson.id)} onPass={()=>onPass(lesson.id)}/>
+      {lesson.id === 'priority-classes' && <PriorityAnimation/>}
       <footer className="course-footer"><button className="course-back" disabled={navigationPosition===0} onClick={()=>move(navigationIds[navigationPosition-1])}><ChevronLeft size={17}/> Previous topic</button><span>{activePath ? 'PATH TOPIC' : 'TOPIC'} {String(navigationPosition+1).padStart(2,'0')} / {String(navigationIds.length).padStart(2,'0')}</span><button className="course-next" onClick={()=>navigationPosition===navigationIds.length-1 ? activePath ? onDashboard() : onComplete() : move(navigationIds[navigationPosition+1])}>{navigationPosition===navigationIds.length-1 ? activePath ? 'Back to paths' : 'Start incident exercises' : 'Next topic'} <ChevronRight size={17}/></button></footer>
       <p className="course-safety"><ShieldCheck size={14}/> Interactive training simulation · no connection to a real cluster.</p>
       <p className="course-accessibility"><CircleHelp size={13}/> Explore the simulation, read the notes, then try the knowledge check. Passed checks are saved in this browser when storage is available.</p>

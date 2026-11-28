@@ -149,6 +149,95 @@ export const ckaLessons: ExtendedLesson[] = [
     },
   },
   {
+    id: 'priority-classes', title: 'Priority classes & preemption',
+    body: 'See how Pod priority affects the scheduling queue, how preemption makes room, and how Pod templates obtain a priority.',
+    takeaway: 'A higher priority influences scheduling order; preemption is conditional and does not guarantee placement.',
+    keywords: 'priorityclass priorityClassName globalDefault preemption preempt pdb scheduling queue terminationGracePeriodSeconds',
+    diagram: { nodes: ['PriorityClass', 'Pending queue', 'Node decision'], links: ['assign priority', 'schedule or preempt'] },
+    steps: [
+      { title: 'Assign priority', detail: 'A cluster-scoped PriorityClass maps a name to an integer. A Pod can reference it directly or through a workload Pod template.' },
+      { title: 'Order the queue', detail: 'The scheduler generally considers higher-priority pending Pods first, but still checks whether each Pod can fit.' },
+      { title: 'Consider preemption', detail: 'If enabled, a pending Pod may displace lower-priority Pods when removing them would make a node feasible. Victims have a graceful termination period.' },
+    ],
+    material: {
+      title: 'PriorityClass field notes', objective: 'Explain queue order, defaults, and the limits of preemption.',
+      concepts: [
+        { term: 'PriorityClass and values', detail: 'PriorityClass is cluster-scoped. Higher numeric values represent higher priority. User-defined values range from -2147483648 to 1000000000; larger values are reserved for built-in system-critical classes.' },
+        { term: 'Pod template and admission', detail: 'Set priorityClassName in a Pod spec or a Deployment’s spec.template.spec. Admission resolves the class to a numeric priority; an unknown class rejects Pod creation. Deleting a class does not change existing Pods.' },
+        { term: 'Global default', detail: 'At most one class can be globalDefault. Pods without a class name receive that default when created, or priority 0 when there is no default. Adding or changing a default does not retroactively change existing Pods.' },
+        { term: 'Queue ordering', detail: 'The scheduler considers higher-priority pending Pods ahead of lower-priority Pods. Failed attempts, backoff, and placement constraints can allow lower-priority Pods to be scheduled first.' },
+        { term: 'Preemption policy', detail: 'PreemptLowerPriority is the default. Never still gives a Pod queue priority but prevents it from preempting other Pods; it can itself be preempted by a higher-priority Pod.' },
+        { term: 'Feasibility and termination', detail: 'Preemption needs a node that can fit the incoming Pod after suitable lower-priority victims are removed. Victims receive their termination grace period. A nominated node is not a guarantee of placement; other constraints and scheduling changes still apply.' },
+        { term: 'PDB and safeguards', detail: 'The scheduler attempts to avoid violating PodDisruptionBudgets, but respects them only on a best-effort basis during preemption. Use priority sparingly and restrict high-priority usage with appropriate ResourceQuota and access controls.' },
+      ],
+      exampleLabel: 'PRIORITY CLASSES AND A DEPLOYMENT',
+      example: `apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: critical
+value: 1000
+globalDefault: false
+preemptionPolicy: PreemptLowerPriority
+description: "Important workloads that may preempt lower-priority Pods"
+---
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: queue-only
+value: 900
+globalDefault: false
+preemptionPolicy: Never
+description: "Important workloads that do not preempt others"
+---
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: standard-default
+value: 100
+# Set to true only after checking the cluster's existing global default.
+globalDefault: false
+description: "Optional default for newly admitted Pods"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: priority-demo
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: priority-demo
+  template:
+    metadata:
+      labels:
+        app: priority-demo
+    spec:
+      priorityClassName: critical
+      containers:
+        - name: web
+          image: nginx:1.27
+          resources:
+            requests:
+              cpu: 100m`,
+      commandsLabel: 'APPLY AND INVESTIGATE',
+      commands: `# Use a disposable cluster; check your context and namespace first.
+# Save the example as priority-demo.yaml. PriorityClasses are cluster-scoped.
+kubectl apply -f priority-demo.yaml
+kubectl get priorityclasses
+kubectl get pods -l app=priority-demo -o custom-columns=NAME:.metadata.name,CLASS:.spec.priorityClassName,PRIORITY:.spec.priority,NOMINATED:.status.nominatedNodeName
+kubectl describe pods -l app=priority-demo
+kubectl get events --sort-by=.lastTimestamp
+# Cleanup only resources created for this exercise.
+kubectl delete deployment priority-demo
+kubectl delete priorityclass critical queue-only standard-default`,
+      question: 'A high-priority Pod uses preemptionPolicy: Never. What happens when no node has room?',
+      options: ['It may preempt any lower-priority Pod', 'It waits for a suitable node without preempting other Pods', 'It skips all placement checks'],
+      answer: 1,
+      explanation: 'Never disables preemption by this Pod, not its queue priority or normal scheduling checks.',
+      source: 'https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/',
+    },
+  },
+  {
     id: 'autoscaling', title: 'Horizontal Pod autoscaling',
     body: 'Learn how workload metrics, resource requests, and replica limits affect an HPA’s scaling decisions.',
     takeaway: 'An HPA changes the desired number of replicas. It does not add node capacity or fix missing metrics.',

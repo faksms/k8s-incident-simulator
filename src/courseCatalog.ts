@@ -11,7 +11,7 @@ export const courseChapters: CourseChapter[] = [
   ] },
   { id: 'workloads', title: 'Workloads', description: 'Understand how applications run and recover.', topics: [
     { id: 'pods', children: [{ id: 'probes' }, { id: 'resource-requests' }] },
-    { id: 'deployments', children: [{ id: 'topology' }] }, { id: 'statefulsets' }, { id: 'scheduling' }, { id: 'autoscaling' }, { id: 'rollouts' },
+    { id: 'deployments', children: [{ id: 'topology' }] }, { id: 'statefulsets' }, { id: 'scheduling', children: [{ id: 'priority-classes' }] }, { id: 'autoscaling' }, { id: 'rollouts' },
   ] },
   { id: 'networking', title: 'Networking', description: 'Discover services and follow requests.', topics: [
     { id: 'services', children: [{ id: 'dns' }, { id: 'traffic' }] }, { id: 'service-types' }, { id: 'network-policy' }, { id: 'gateway' },
